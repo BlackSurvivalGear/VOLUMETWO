@@ -1,16 +1,90 @@
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
+const functions = getFunctions(app, 'europe-west1');
+const getMyRole = httpsCallable(functions, 'getMyRole');
 const googleProvider = new GoogleAuthProvider();
-const isSignInPage = window.location.pathname.endsWith('/auth.html');
-const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
+const path = window.location.pathname;
+const isSignInPage = path.endsWith('/auth.html');
+const isAdminPage = path.endsWith('/admin.html');
+const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html') || isAdminPage;
 
 const setStatus = (message, type = '') => {
   const status = document.querySelector('#auth-status');
   if (!status) return;
   status.textContent = message;
   status.className = `auth-status ${type}`.trim();
+};
+
+const roleLabel = (role) => role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : 'Member';
+
+const closeMobileNav = () => {
+  const mobileNav = document.querySelector('.mobile-nav');
+  const menuToggle = document.querySelector('.menu-toggle');
+  mobileNav?.classList.remove('open');
+  menuToggle?.setAttribute('aria-expanded', 'false');
+  if (menuToggle) menuToggle.textContent = 'Menu';
+};
+
+const renderSignedInNavigation = (role) => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  const adminLink = role === 'admin' || role === 'superadmin'
+    ? '<a href="admin.html">Admin</a>'
+    : '';
+  const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
+
+  [desktopNav, mobileNav].forEach((nav) => {
+    if (!nav) return;
+    nav.innerHTML = html;
+    nav.querySelector('.nav-sign-out')?.addEventListener('click', async () => {
+      const button = nav.querySelector('.nav-sign-out');
+      button.disabled = true;
+      try {
+        await signOut(auth);
+        window.location.replace('index.html');
+      } catch {
+        button.disabled = false;
+      }
+    });
+  });
+
+  mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMobileNav));
+  mobileNav?.querySelector('.nav-sign-out')?.addEventListener('click', closeMobileNav);
+  document.body.dataset.authRole = role;
+};
+
+const renderSignedOutNavigation = () => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  if (!desktopNav || !mobileNav) return;
+
+  const publicLinks = desktopNav.querySelectorAll('a:not(.sign-in-link)');
+  const mobileLinks = mobileNav.querySelectorAll('a:not(.sign-in-link)');
+  const publicHtml = Array.from(publicLinks).map((link) => link.outerHTML).join('');
+  const mobileHtml = Array.from(mobileLinks).map((link) => link.outerHTML).join('');
+
+  if (!desktopNav.querySelector('.sign-in-link')) {
+    desktopNav.innerHTML = `${publicHtml}<a class="sign-in-link" href="auth.html">Sign In</a>`;
+  }
+  if (!mobileNav.querySelector('.sign-in-link')) {
+    mobileNav.innerHTML = `${mobileHtml}<a class="sign-in-link" href="auth.html">Sign In</a>`;
+  }
+  delete document.body.dataset.authRole;
+};
+
+const resolveRole = async (user) => {
+  try {
+    const result = await getMyRole();
+    const role = result.data?.role || 'member';
+    await user.getIdToken(true);
+    return role;
+  } catch {
+    const token = await user.getIdTokenResult();
+    return token.claims.role || 'member';
+  }
 };
 
 if (isSignInPage) {
@@ -62,26 +136,42 @@ if (isSignInPage) {
   });
 }
 
-if (isMemberPage) {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    renderSignedOutNavigation();
+    if (isMemberPage) window.location.replace('auth.html');
+    return;
+  }
+
+  const role = await resolveRole(user);
+  renderSignedInNavigation(role);
+
   const accountEmail = document.querySelector('#account-email, #member-email');
   const accountName = document.querySelector('#account-name, #member-name');
-  const signOutButton = document.querySelector('#sign-out');
+  if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
+  if (accountName) accountName.textContent = user.displayName || 'V2 Member';
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.replace('auth.html');
-      return;
-    }
+  if (isAdminPage && role !== 'admin' && role !== 'superadmin') {
+    window.location.replace('dashboard.html');
+    return;
+  }
 
-    if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
-    if (accountName) accountName.textContent = user.displayName || 'V2 Member';
+  document.querySelectorAll('[data-auth-role]').forEach((element) => {
+    element.textContent = roleLabel(role);
   });
 
-  signOutButton?.addEventListener('click', async () => {
+  document.dispatchEvent(new CustomEvent('v2-auth-ready', {
+    detail: { user, role }
+  }));
+});
+
+if (isMemberPage) {
+  document.querySelector('#sign-out')?.addEventListener('click', async (event) => {
+    const signOutButton = event.currentTarget;
     signOutButton.disabled = true;
     try {
       await signOut(auth);
-      window.location.replace('auth.html');
+      window.location.replace('index.html');
     } catch {
       signOutButton.disabled = false;
     }
