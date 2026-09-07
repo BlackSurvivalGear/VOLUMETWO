@@ -24,7 +24,7 @@
     <div>
       <p class="eyebrow">Volume Two / Administration</p>
       <h1>Member<br><em>management.</em></h1>
-      <p>Manage authenticated users, account status and administrator roles from one protected workspace.</p>
+      <p>Manage authenticated users, account status and access roles from one protected workspace.</p>
     </div>
     <div class="admin-role-badge"><span data-auth-role>Checking role…</span><small>ACCESS LEVEL</small></div>
   </section>
@@ -44,6 +44,7 @@
     <div class="admin-stats" aria-label="User statistics">
       <article><span>Total users</span><strong id="stat-total">—</strong></article>
       <article><span>Admins</span><strong id="stat-admins">—</strong></article>
+      <article><span>Pro users</span><strong id="stat-pros">—</strong></article>
       <article><span>Suspended</span><strong id="stat-suspended">—</strong></article>
     </div>
 
@@ -58,13 +59,13 @@
       </table>
     </div>
 
-    <p class="admin-note">Admins can suspend or delete users. Only superadmins can promote or demote admins. The designated <strong>admin@lawal.org</strong> account is the superadmin bootstrap account.</p>
+    <p class="admin-note"><strong>Access roles:</strong> Member is the default role for new accounts. Pro is an elevated member tier. Admin can manage users, while only Superadmin can grant or remove the Admin role. The designated <strong>admin@lawal.org</strong> account is the Superadmin bootstrap account.</p>
   </section>
 </main>
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
-<script type="module" src="auth.js?v=2"></script>
+<script type="module" src="auth.js?v=4"></script>
 <script type="module" src="admin.js"></script>
 </body>
 </html>
