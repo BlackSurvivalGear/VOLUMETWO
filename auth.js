@@ -19,6 +19,14 @@ const setStatus = (message, type = '') => {
   status.className = `auth-status ${type}`.trim();
 };
 
+const injectPrivateNavStyles = () => {
+  if (document.querySelector('#v2-private-nav-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'v2-private-nav-styles';
+  style.textContent = `.desktop-nav .nav-sign-out{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.desktop-nav .nav-sign-out:hover{color:#b58a4b}.desktop-nav a{display:inline-flex!important;align-items:center}.mobile-nav .nav-sign-out{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;text-transform:uppercase;letter-spacing:.08em;font-size:13px;cursor:pointer}.mobile-nav .nav-sign-out:hover{color:#b58a4b}`;
+  document.head.appendChild(style);
+};
+
 const roleLabel = (role) => role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : 'Member';
 
 const closeMobileNav = () => {
@@ -36,6 +44,8 @@ const renderSignedInNavigation = (role) => {
     ? '<a href="admin.html">Admin</a>'
     : '';
   const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
+
+  injectPrivateNavStyles();
 
   [desktopNav, mobileNav].forEach((nav) => {
     if (!nav) return;
