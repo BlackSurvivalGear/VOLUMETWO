@@ -36,17 +36,31 @@ const setStatus = (message, isError = false) => {
 };
 
 const rolePill = (role) => {
-  const label = role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : 'Member';
+  const label = role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : role === 'pro' ? 'Pro' : 'Member';
   return `<span class="role-pill ${escapeHtml(role)}">${label}</span>`;
+};
+
+const roleOptions = (role, uid) => {
+  const isSelf = auth.currentUser?.uid === uid;
+  const isSuperadmin = role === 'superadmin';
+  if (isSelf || role === 'superadmin') return '';
+
+  const allowedRoles = currentRole === 'superadmin'
+    ? ['member', 'pro', 'admin']
+    : ['member', 'pro'];
+
+  return `<select class="role-select" data-action="role" data-uid="${escapeHtml(uid)}" aria-label="Change user role">${allowedRoles.map((option) => `<option value="${option}"${option === role ? ' selected' : ''}>${option === 'admin' ? 'Admin' : option === 'pro' ? 'Pro' : 'Member'}</option>`).join('')}</select>`;
 };
 
 const renderUsers = (users) => {
   const total = users.length;
   const admins = users.filter((user) => user.role === 'admin' || user.role === 'superadmin').length;
+  const pros = users.filter((user) => user.role === 'pro').length;
   const suspended = users.filter((user) => user.disabled).length;
 
   document.querySelector('#stat-total').textContent = total;
   document.querySelector('#stat-admins').textContent = admins;
+  document.querySelector('#stat-pros').textContent = pros;
   document.querySelector('#stat-suspended').textContent = suspended;
 
   if (!users.length) {
@@ -57,17 +71,13 @@ const renderUsers = (users) => {
   tableBody.innerHTML = users.map((user) => {
     const isSelf = auth.currentUser?.uid === user.uid;
     const isSuperadmin = user.role === 'superadmin';
-    const canChangeRole = currentRole === 'superadmin' && !isSelf && !isSuperadmin;
-    const canChangeStatus = !isSelf;
-    const canDelete = !isSelf;
+    const canChangeStatus = !isSelf && !isSuperadmin;
+    const canDelete = !isSelf && !isSuperadmin;
     const displayName = user.displayName || 'Unnamed user';
     const statusClass = user.disabled ? 'suspended' : 'active';
     const statusLabel = user.disabled ? 'Suspended' : 'Active';
     const verification = user.emailVerified ? 'Verified' : 'Unverified';
     const accountMeta = [user.provider || 'unknown provider', verification].join(' · ');
-    const roleControl = canChangeRole
-      ? `<button class="admin-action" type="button" data-action="role" data-uid="${escapeHtml(user.uid)}" data-role="${user.role}">${user.role === 'admin' ? 'Make member' : 'Make admin'}</button>`
-      : '';
     const statusControl = canChangeStatus
       ? `<button class="admin-action" type="button" data-action="status" data-uid="${escapeHtml(user.uid)}" data-disabled="${user.disabled}">${user.disabled ? 'Resume' : 'Suspend'}</button>`
       : '';
@@ -81,7 +91,7 @@ const renderUsers = (users) => {
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
       <td>${escapeHtml(formatDate(user.createdAt))}</td>
       <td>${escapeHtml(formatDate(user.lastSignInAt))}</td>
-      <td><div class="admin-actions">${roleControl}${statusControl}${deleteControl || '<span class="user-email">Current account</span>'}</div></td>
+      <td><div class="admin-actions">${roleOptions(user.role, user.uid)}${statusControl}${deleteControl || '<span class="user-email">Protected account</span>'}</div></td>
     </tr>`;
   }).join('');
 };
@@ -140,22 +150,32 @@ tableBody?.addEventListener('click', async (event) => {
     await withActionLock(button, async () => {
       await deleteUser({ uid });
     });
+  }
+});
+
+tableBody?.addEventListener('change', async (event) => {
+  const select = event.target.closest('select[data-action="role"]');
+  if (!select) return;
+
+  const uid = select.dataset.uid;
+  const role = select.value;
+  if (!uid || !['member', 'pro', 'admin'].includes(role)) return;
+
+  if (role === 'admin' && currentRole !== 'superadmin') {
+    setStatus('Only a superadmin can grant the admin role.', true);
+    await loadUsers();
     return;
   }
 
-  if (action === 'role') {
-    if (currentRole !== 'superadmin') return;
-    const currentTargetRole = button.dataset.role;
-    const nextRole = currentTargetRole === 'admin' ? 'member' : 'admin';
-    const prompt = nextRole === 'admin'
-      ? 'Make this user an admin? They will be able to suspend and delete users.'
-      : 'Remove this user’s admin role?';
-    if (!window.confirm(prompt)) return;
-
-    await withActionLock(button, async () => {
-      await setUserRole({ uid, role: nextRole });
-    });
+  const label = role === 'admin' ? 'Admin' : role === 'pro' ? 'Pro' : 'Member';
+  if (!window.confirm(`Change this user to ${label}?`)) {
+    await loadUsers();
+    return;
   }
+
+  await withActionLock(select, async () => {
+    await setUserRole({ uid, role });
+  });
 });
 
 refreshButton?.addEventListener('click', loadUsers);
