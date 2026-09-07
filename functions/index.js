@@ -10,6 +10,7 @@ const SUPERADMIN_EMAIL = 'admin@lawal.org';
 const ROLES = ['member', 'pro', 'admin', 'superadmin'];
 
 const normaliseEmail = (email) => String(email || '').trim().toLowerCase();
+const isSuperadmin = (user) => normaliseEmail(user?.email) === SUPERADMIN_EMAIL;
 
 async function requireSignedIn(request) {
   if (!request.auth) {
@@ -19,8 +20,8 @@ async function requireSignedIn(request) {
   const user = await auth.getUser(request.auth.uid);
 
   // The designated superadmin is always resolved from the verified identity.
-  // No client can grant itself this role.
-  if (normaliseEmail(user.email) === SUPERADMIN_EMAIL) {
+  // No browser/client code can grant itself this role.
+  if (isSuperadmin(user)) {
     if (user.customClaims?.role !== 'superadmin') {
       await auth.setCustomUserClaims(request.auth.uid, {
         ...(user.customClaims || {}),
@@ -30,9 +31,8 @@ async function requireSignedIn(request) {
     return 'superadmin';
   }
 
-  // Every newly created account receives an explicit member claim the first
-  // time its role is resolved. This keeps member as the safe default while
-  // making the account's role explicit for future dashboard permissions.
+  // Every other account is explicitly assigned a lower role. A missing,
+  // invalid, or forged superadmin claim always falls back to Member.
   const role = user.customClaims?.role;
   if (!ROLES.includes(role) || role === 'superadmin') {
     await auth.setCustomUserClaims(request.auth.uid, {
@@ -57,7 +57,7 @@ async function getTargetRole(uid) {
   const target = await auth.getUser(uid);
   return {
     user: target,
-    role: normaliseEmail(target.email) === SUPERADMIN_EMAIL
+    role: isSuperadmin(target)
       ? 'superadmin'
       : (ROLES.includes(target.customClaims?.role) ? target.customClaims.role : 'member')
   };
@@ -69,9 +69,15 @@ async function assertCanManageTarget(callerRole, callerUid, targetUid) {
   }
 
   const { user, role } = await getTargetRole(targetUid);
-  if (callerRole === 'admin' && role === 'superadmin') {
-    throw new HttpsError('permission-denied', 'Only a superadmin can manage the superadmin account.');
+
+  // Strict hierarchy:
+  // Superadmin -> can manage Member, Pro and Admin.
+  // Admin      -> can manage Member and Pro only.
+  // Member/Pro -> cannot reach these functions.
+  if (callerRole === 'admin' && (role === 'admin' || role === 'superadmin')) {
+    throw new HttpsError('permission-denied', 'Admins can manage Member and Pro accounts only.');
   }
+
   return { user, role };
 }
 
@@ -90,7 +96,7 @@ async function listAllUsers() {
 
 const serialiseUser = (user) => {
   const claims = user.customClaims || {};
-  const role = normaliseEmail(user.email) === SUPERADMIN_EMAIL
+  const role = isSuperadmin(user)
     ? 'superadmin'
     : (ROLES.includes(claims.role) ? claims.role : 'member');
 
@@ -161,21 +167,24 @@ exports.setUserRole = onCall({ region: REGION }, async (request) => {
   }
 
   const target = await auth.getUser(uid);
-  if (normaliseEmail(target.email) === SUPERADMIN_EMAIL) {
-    throw new HttpsError('failed-precondition', 'The designated superadmin role cannot be changed here.');
+  if (isSuperadmin(target)) {
+    throw new HttpsError('failed-precondition', 'The designated superadmin role cannot be changed.');
   }
 
   const currentRole = ROLES.includes(target.customClaims?.role)
     ? target.customClaims.role
     : 'member';
 
-  // Admins may manage the member/pro access tiers, but only the superadmin
-  // can grant or remove the administrator role.
+  // Only Superadmin can grant or remove Admin. Admin can move accounts
+  // between Member and Pro, but cannot promote, demote or manage another Admin.
   if ((role === 'admin' || currentRole === 'admin') && callerRole !== 'superadmin') {
-    throw new HttpsError('permission-denied', 'Only a superadmin can grant or remove the admin role.');
+    throw new HttpsError('permission-denied', 'Only the superadmin can grant or remove the admin role.');
   }
 
-  const currentClaims = { ...(target.customClaims || {}), role };
-  await auth.setCustomUserClaims(uid, currentClaims);
+  await auth.setCustomUserClaims(uid, {
+    ...(target.customClaims || {}),
+    role
+  });
+
   return { success: true, role };
 });
