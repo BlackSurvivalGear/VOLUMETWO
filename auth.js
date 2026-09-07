@@ -1,9 +1,9 @@
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, getAdditionalUserInfo, GoogleAuthProvider, signOut, getIdTokenResult } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, getAdditionalUserInfo, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
-const functions = getFunctions(app, 'europe-west1');
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const isSignInPage = window.location.pathname.endsWith('/auth.html');
@@ -21,15 +21,40 @@ const setStatus = (message, type = '') => {
 
 const routeAfterSignIn = () => window.location.replace('dashboard.html');
 
+async function ensureUserProfile(user) {
+  const ref = doc(db, 'users', user.uid);
+  const snapshot = await getDoc(ref);
+  const existing = snapshot.exists() ? snapshot.data() : null;
+  if (!existing) {
+    const isSuperadmin = (user.email || '').trim().toLowerCase() === 'admin@lawal.org';
+    await setDoc(ref, {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || '',
+      photoURL: user.photoURL || '',
+      role: isSuperadmin ? 'superadmin' : 'member',
+      suspended: false,
+      createdAt: serverTimestamp(),
+      lastSignInAt: serverTimestamp()
+    });
+    return isSuperadmin ? 'superadmin' : 'member';
+  }
+  await setDoc(ref, {
+    uid: user.uid,
+    email: user.email || existing.email || '',
+    displayName: user.displayName || existing.displayName || '',
+    photoURL: user.photoURL || existing.photoURL || '',
+    lastSignInAt: serverTimestamp()
+  }, { merge: true });
+  return VALID_ROLES.includes(existing.role) ? existing.role : 'member';
+}
+
 async function resolveRole(user) {
   try {
-    const result = await httpsCallable(functions, 'getMyRole')({});
-    const role = result.data?.role;
-    return VALID_ROLES.includes(role) ? role : 'member';
+    return await ensureUserProfile(user);
   } catch (error) {
-    const token = await getIdTokenResult(user, false).catch(() => ({ claims: {} }));
-    const role = token.claims?.role;
-    return VALID_ROLES.includes(role) ? role : 'member';
+    console.error('Unable to load V2 user profile:', error);
+    return 'member';
   }
 }
 
@@ -158,6 +183,7 @@ onAuthStateChanged(auth, async (user) => {
   const name = document.querySelector('#account-name, #member-name');
   if (email) email.textContent = user.email || 'Signed-in user';
   if (name) name.textContent = user.displayName || 'V2 Member';
+  if (isAdminPage && !['admin', 'superadmin'].includes(role)) window.location.replace('dashboard.html');
 });
 
 if (isMemberPage) {
