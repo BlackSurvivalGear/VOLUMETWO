@@ -63,6 +63,8 @@ const renderUsers = (users) => {
     const displayName = user.displayName || 'Unnamed user';
     const statusClass = user.disabled ? 'suspended' : 'active';
     const statusLabel = user.disabled ? 'Suspended' : 'Active';
+    const verification = user.emailVerified ? 'Verified' : 'Unverified';
+    const accountMeta = [user.provider || 'unknown provider', verification].join(' · ');
     const roleControl = canChangeRole
       ? `<button class="admin-action" type="button" data-action="role" data-uid="${escapeHtml(user.uid)}" data-role="${user.role}">${user.role === 'admin' ? 'Make member' : 'Make admin'}</button>`
       : '';
@@ -74,7 +76,7 @@ const renderUsers = (users) => {
       : '';
 
     return `<tr>
-      <td><span class="user-name">${escapeHtml(displayName)}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span></td>
+      <td><span class="user-name">${escapeHtml(displayName)}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span><span class="user-email">${escapeHtml(accountMeta)}</span></td>
       <td>${rolePill(user.role)}</td>
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
       <td>${escapeHtml(formatDate(user.createdAt))}</td>
