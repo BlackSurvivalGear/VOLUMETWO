@@ -1,0 +1,1 @@
+Google account creation is supported on the Create Account view.
