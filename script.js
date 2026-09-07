@@ -32,14 +32,14 @@ if (brandMark) {
   brandMark.replaceWith(logo);
 }
 
-const isDashboard = window.location.pathname.endsWith('/dashboard.html');
+const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
 const addSignInLink = (nav) => {
   if (!nav || nav.querySelector('.sign-in-link')) return;
   const link = document.createElement('a');
   link.className = 'sign-in-link';
-  link.href = isDashboard ? 'dashboard.html' : 'auth.html';
-  link.textContent = isDashboard ? 'Dashboard' : 'Sign In';
-  if (isDashboard) link.setAttribute('aria-current', 'page');
+  link.href = isMemberPage ? 'dashboard.html' : 'auth.html';
+  link.textContent = isMemberPage ? 'Dashboard' : 'Sign In';
+  if (isMemberPage) link.setAttribute('aria-current', 'page');
   nav.appendChild(link);
 };
 

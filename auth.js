@@ -4,7 +4,7 @@ import { app } from "./firebase-config.js";
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const isSignInPage = window.location.pathname.endsWith('/auth.html');
-const isDashboardPage = window.location.pathname.endsWith('/dashboard.html');
+const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
 
 const setStatus = (message, type = '') => {
   const status = document.querySelector('#auth-status');
@@ -62,9 +62,9 @@ if (isSignInPage) {
   });
 }
 
-if (isDashboardPage) {
-  const accountEmail = document.querySelector('#account-email');
-  const accountName = document.querySelector('#account-name');
+if (isMemberPage) {
+  const accountEmail = document.querySelector('#account-email, #member-email');
+  const accountName = document.querySelector('#account-name, #member-name');
   const signOutButton = document.querySelector('#sign-out');
 
   onAuthStateChanged(auth, (user) => {
@@ -73,8 +73,8 @@ if (isDashboardPage) {
       return;
     }
 
-    accountEmail.textContent = user.email || 'Signed-in user';
-    accountName.textContent = user.displayName || 'V2 Member';
+    if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
+    if (accountName) accountName.textContent = user.displayName || 'V2 Member';
   });
 
   signOutButton?.addEventListener('click', async () => {
