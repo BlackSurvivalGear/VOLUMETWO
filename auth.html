@@ -52,10 +52,6 @@
       <div id="create-account-view" class="auth-view" hidden>
         <p class="auth-view-intro">Create your V2 member account and access the dashboard and Business Tools.</p>
 
-        <div class="auth-divider auth-create-divider"><span>create with</span></div>
-        <button class="google-button" id="google-create-account" type="button">Continue with Google</button>
-
-        <div class="auth-divider"><span>or</span></div>
         <form id="create-account-form" novalidate>
           <label for="new-email">Email address</label>
           <input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
@@ -68,6 +64,9 @@
 
           <button class="auth-submit" type="submit">Create Account <span>↗</span></button>
         </form>
+
+        <div class="auth-divider auth-create-divider"><span>or</span></div>
+        <button class="google-button" id="google-create-account" type="button">Continue with Google</button>
 
         <p class="auth-member-note">New accounts start with <strong>Member</strong> access.</p>
         <button class="auth-switch auth-switch-back" id="show-sign-in" type="button">
@@ -83,6 +82,6 @@
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
-<script type="module" src="auth.js"></script>
+<script type="module" src="auth.js?v=3"></script>
 </body>
 </html>

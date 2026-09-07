@@ -1,8 +1,9 @@
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, getAdditionalUserInfo, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 const isSignInPage = window.location.pathname.endsWith('/auth.html');
 const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
 
@@ -36,6 +37,7 @@ if (isSignInPage) {
 
   showCreateButton?.addEventListener('click', () => showView('create'));
   showSignInButton?.addEventListener('click', () => showView('sign-in'));
+  if (new URLSearchParams(window.location.search).get('mode') === 'create') showView('create');
 
   onAuthStateChanged(auth, (user) => {
     if (user) routeAfterSignIn();
@@ -94,11 +96,20 @@ if (isSignInPage) {
     }
   });
 
-  const signInWithGoogle = async (button) => {
+  const signInWithGoogle = async (button, creationMode = false) => {
     button.disabled = true;
-    setStatus('Opening Google sign-in…');
+    setStatus(creationMode ? 'Choose the Google account for your new V2 account…' : 'Opening Google sign-in…');
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      if (creationMode) {
+        const additionalInfo = getAdditionalUserInfo(result);
+        if (!additionalInfo?.isNewUser) {
+          await signOut(auth);
+          setStatus('That Google account already has a V2 account. Please use Sign In instead.', 'error');
+          button.disabled = false;
+          return;
+        }
+      }
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') setStatus('Google sign-in was not completed. Please try again.', 'error');
       else setStatus('');
@@ -106,8 +117,8 @@ if (isSignInPage) {
     }
   };
 
-  googleButton?.addEventListener('click', () => signInWithGoogle(googleButton));
-  googleCreateButton?.addEventListener('click', () => signInWithGoogle(googleCreateButton));
+  googleButton?.addEventListener('click', () => signInWithGoogle(googleButton, false));
+  googleCreateButton?.addEventListener('click', () => signInWithGoogle(googleCreateButton, true));
 }
 
 const renderSignedInNavigation = () => {
@@ -128,7 +139,7 @@ const renderSignedOutNavigation = () => {
   const desktopNav = document.querySelector('.desktop-nav');
   const mobileNav = document.querySelector('.mobile-nav');
   if (!desktopNav || !mobileNav) return;
-  const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a>';
+  const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a><a class="nav-create-account" href="auth.html?mode=create">Create V2 Account</a>';
   desktopNav.innerHTML = publicHtml;
   mobileNav.innerHTML = publicHtml;
 };
