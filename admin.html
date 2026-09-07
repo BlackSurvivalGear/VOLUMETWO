@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Volume Two administrator dashboard for secure user management.">
+  <meta name="theme-color" content="#101114">
+  <title>Admin Dashboard | Volume Two</title>
+  <link rel="icon" type="image/png" href="FAVI.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="dashboard-page admin-page">
+<header class="site-header" id="top">
+  <a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a>
+  <nav class="desktop-nav" aria-label="Private navigation"></nav>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation">Menu</button>
+</header>
+<nav class="mobile-nav" id="mobile-nav" aria-label="Private navigation"></nav>
+
+<main>
+  <section class="admin-hero">
+    <div>
+      <p class="eyebrow">Volume Two / Administration</p>
+      <h1>Member<br><em>management.</em></h1>
+      <p>Manage authenticated users, account status and administrator roles from one protected workspace.</p>
+    </div>
+    <div class="admin-role-badge"><span data-auth-role>Checking role…</span><small>ACCESS LEVEL</small></div>
+  </section>
+
+  <section class="admin-content section-pad">
+    <div class="admin-toolbar">
+      <div>
+        <span class="section-label">01 / Users</span>
+        <h2>Firebase<br><em>accounts.</em></h2>
+      </div>
+      <div class="admin-toolbar-actions">
+        <span id="admin-status" class="admin-status" role="status">Loading users…</span>
+        <button id="refresh-users" class="button button-primary" type="button">Refresh <span>↻</span></button>
+      </div>
+    </div>
+
+    <div class="admin-stats" aria-label="User statistics">
+      <article><span>Total users</span><strong id="stat-total">—</strong></article>
+      <article><span>Admins</span><strong id="stat-admins">—</strong></article>
+      <article><span>Suspended</span><strong id="stat-suspended">—</strong></article>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>User</th><th>Role</th><th>Status</th><th>Created</th><th>Last sign-in</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="user-table-body">
+          <tr><td colspan="6" class="admin-empty">Loading user accounts…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="admin-note">Admins can suspend or delete users. Only superadmins can promote or demote admins. The designated <strong>admin@lawal.org</strong> account is the superadmin bootstrap account.</p>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
+<script src="script.js"></script>
+<script type="module" src="auth.js"></script>
+<script type="module" src="admin.js"></script>
+</body>
+</html>
