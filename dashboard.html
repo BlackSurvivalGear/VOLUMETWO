@@ -32,6 +32,11 @@
     <div class="dashboard-badge" aria-hidden="true"><span>V2</span><small>MEMBER AREA</small></div>
   </section>
 
+  <section class="dashboard-account section-pad">
+    <div><span class="account-label">Signed in as</span><strong id="account-name">Loading…</strong><span id="account-email">Checking your account…</span></div>
+    <button id="sign-out" type="button">Sign Out <span>↗</span></button>
+  </section>
+
   <section class="dashboard-tools section-pad">
     <div class="section-label">01 / Business tools</div>
     <div class="dashboard-heading">
@@ -57,5 +62,6 @@
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
+<script type="module" src="auth.js"></script>
 </body>
 </html>
