@@ -19,6 +19,7 @@ if (isSignInPage) {
   const form = document.querySelector('#sign-in-form');
   const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
+  const googleCreateButton = document.querySelector('#google-create-account');
   const signInView = document.querySelector('#sign-in-view');
   const createAccountView = document.querySelector('#create-account-view');
   const showCreateButton = document.querySelector('#show-create-account');
@@ -93,17 +94,20 @@ if (isSignInPage) {
     }
   });
 
-  googleButton?.addEventListener('click', async () => {
-    googleButton.disabled = true;
+  const signInWithGoogle = async (button) => {
+    button.disabled = true;
     setStatus('Opening Google sign-in…');
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') setStatus('Google sign-in was not completed. Please try again.', 'error');
       else setStatus('');
-      googleButton.disabled = false;
+      button.disabled = false;
     }
-  });
+  };
+
+  googleButton?.addEventListener('click', () => signInWithGoogle(googleButton));
+  googleCreateButton?.addEventListener('click', () => signInWithGoogle(googleCreateButton));
 }
 
 const renderSignedInNavigation = () => {
