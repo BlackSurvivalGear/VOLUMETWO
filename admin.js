@@ -5,6 +5,7 @@ import { app } from "./firebase-config.js";
 const auth = getAuth(app);
 const db = getFirestore(app);
 const ROLE_LABELS = { member: 'Member', pro: 'Pro', admin: 'Admin', superadmin: 'Superadmin' };
+const PLAN_LABELS = { free: 'Free', pro: 'Pro' };
 let currentRole = 'member';
 let currentUid = '';
 let users = [];
@@ -15,7 +16,7 @@ const status = (message, type = '') => {
   el.textContent = message;
   el.dataset.type = type;
 };
-const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
+const escapeHtml = (value = '') => String(value).replace(/[&<>'\"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '\"':'&quot;' }[char]));
 const formatDate = (value) => value?.toDate ? value.toDate().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : value ? new Date(value).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
 
 function updateStats(list) {
@@ -39,22 +40,22 @@ function actionCell(user) {
 function renderUsers(list) {
   updateStats(list);
   const body = document.querySelector('#user-table-body');
-  if (!list.length) { body.innerHTML = '<tr><td colspan="6" class="admin-empty">No V2 user profiles found.</td></tr>'; return; }
-  body.innerHTML = list.map((user) => `<tr><td><span class="user-name">${escapeHtml(user.displayName || 'V2 Member')}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span></td><td><span class="role-pill ${user.role}">${ROLE_LABELS[user.role] || 'Member'}</span></td><td><span class="status-pill ${user.suspended ? 'suspended' : 'active'}">${user.suspended ? 'Suspended' : 'Active'}</span></td><td>${formatDate(user.createdAt)}</td><td>${formatDate(user.lastSignInAt)}</td><td>${actionCell(user)}</td></tr>`).join('');
+  if (!list.length) { body.innerHTML = '<tr><td colspan="7" class="admin-empty">No V2 user profiles found.</td></tr>'; return; }
+  body.innerHTML = list.map((user) => `<tr><td><span class="user-name">${escapeHtml(user.displayName || 'V2 Member')}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span>${user.phone ? `<span class="user-email">${escapeHtml(user.phone)}</span>` : ''}</td><td><span class="role-pill ${user.role}">${ROLE_LABELS[user.role] || 'Member'}</span></td><td><span class="role-pill plan-${user.plan || 'free'}">${PLAN_LABELS[user.plan] || 'Free'}</span></td><td><span class="status-pill ${user.suspended ? 'suspended' : 'active'}">${user.suspended ? 'Suspended' : 'Active'}</span></td><td>${formatDate(user.createdAt)}</td><td>${formatDate(user.lastSignInAt)}</td><td>${actionCell(user)}</td></tr>`).join('');
 }
 
 async function loadUsers() {
   status('Loading users…');
   try {
     const snapshot = await getDocs(collection(db, 'users'));
-    users = snapshot.docs.map((item) => ({ uid: item.id, ...item.data(), role: ROLE_LABELS[item.data().role] ? item.data().role : 'member' }));
+    users = snapshot.docs.map((item) => ({ uid: item.id, ...item.data(), role: ROLE_LABELS[item.data().role] ? item.data().role : 'member', plan: PLAN_LABELS[item.data().plan] ? item.data().plan : 'free' }));
     users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
     renderUsers(users);
     status(`${users.length} account${users.length === 1 ? '' : 's'} loaded.`);
   } catch (error) {
     console.error(error);
     status('Unable to load V2 user profiles. Check Firestore rules.', 'error');
-    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="6" class="admin-empty">User profiles could not be loaded.</td></tr>';
+    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="7" class="admin-empty">User profiles could not be loaded.</td></tr>';
   }
 }
 
@@ -77,7 +78,7 @@ document.querySelector('#user-table-body')?.addEventListener('click', async (eve
   if (button.dataset.action === 'toggle') {
     const suspended = button.dataset.suspended === 'true';
     button.disabled = true; status(suspended ? 'Restoring access…' : 'Suspending access…');
-    try { await updateUser(uid, { suspended: !suspended }, suspended ? 'V2 access restored.' : 'V2 access suspended.'); } catch (error) { status('Unable to change access status. Check Firestore rules.', 'error'); button.disabled = false; }
+    try { await updateUser(uid, { suspended: !suspended, accountStatus: suspended ? 'active' : 'suspended', updatedAt: new Date() }, suspended ? 'V2 access restored.' : 'V2 access suspended.'); } catch (error) { status('Unable to change access status. Check Firestore rules.', 'error'); button.disabled = false; }
   }
 });
 
@@ -87,7 +88,7 @@ document.querySelector('#user-table-body')?.addEventListener('change', async (ev
   const uid = select.dataset.roleUid;
   const role = select.value;
   select.disabled = true; status('Updating access level…');
-  try { await updateUser(uid, { role }, `Access level changed to ${ROLE_LABELS[role]}.`); } catch (error) { status('Unable to update role. Check Firestore rules.', 'error'); select.disabled = false; }
+  try { await updateUser(uid, { role, updatedAt: new Date() }, `Access level changed to ${ROLE_LABELS[role]}.`); } catch (error) { status('Unable to update role. Check Firestore rules.', 'error'); select.disabled = false; }
 });
 
 onAuthStateChanged(auth, async (user) => {
@@ -99,11 +100,11 @@ onAuthStateChanged(auth, async (user) => {
     currentRole = (user.email || '').toLowerCase() === 'admin@lawal.org' ? 'superadmin' : (ROLE_LABELS[own?.role] ? own.role : 'member');
     if (!['admin','superadmin'].includes(currentRole)) { window.location.replace('dashboard.html'); return; }
     document.querySelector('[data-auth-role]').textContent = ROLE_LABELS[currentRole];
-    renderUsers(snapshot.docs.map((item) => ({ uid: item.id, ...item.data(), role: ROLE_LABELS[item.data().role] ? item.data().role : 'member' })));
+    renderUsers(snapshot.docs.map((item) => ({ uid: item.id, ...item.data(), role: ROLE_LABELS[item.data().role] ? item.data().role : 'member', plan: PLAN_LABELS[item.data().plan] ? item.data().plan : 'free' })));
     status('User profiles loaded.');
   } catch (error) {
     console.error(error);
     status('Administrator access could not be verified. Check Firestore rules.', 'error');
-    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="6" class="admin-empty">Administrator access could not be verified.</td></tr>';
+    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="7" class="admin-empty">Administrator access could not be verified.</td></tr>';
   }
 });
