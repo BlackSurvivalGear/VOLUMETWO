@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -13,12 +13,15 @@ const setStatus = (message, type = '') => {
   status.className = `auth-status ${type}`.trim();
 };
 
+const routeAfterSignIn = () => window.location.replace('dashboard.html');
+
 if (isSignInPage) {
   const form = document.querySelector('#sign-in-form');
+  const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
 
   onAuthStateChanged(auth, (user) => {
-    if (user) window.location.replace('dashboard.html');
+    if (user) routeAfterSignIn();
   });
 
   form?.addEventListener('submit', async (event) => {
@@ -26,13 +29,10 @@ if (isSignInPage) {
     const email = document.querySelector('#email').value.trim();
     const password = document.querySelector('#password').value;
     const submitButton = form.querySelector('button[type="submit"]');
-
     submitButton.disabled = true;
     setStatus('Signing you in…');
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      window.location.replace('dashboard.html');
     } catch (error) {
       const messages = {
         'auth/invalid-credential': 'The email or password is incorrect.',
@@ -45,45 +45,90 @@ if (isSignInPage) {
     }
   });
 
+  createForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const email = document.querySelector('#new-email').value.trim();
+    const password = document.querySelector('#new-password').value;
+    const confirmPassword = document.querySelector('#new-password-confirm').value;
+    const submitButton = createForm.querySelector('button[type="submit"]');
+
+    if (password.length < 6) {
+      setStatus('Please use a password with at least 6 characters.', 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setStatus('The passwords do not match.', 'error');
+      return;
+    }
+
+    submitButton.disabled = true;
+    setStatus('Creating your member account…');
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setStatus('Member account created. Opening your dashboard…');
+    } catch (error) {
+      const messages = {
+        'auth/email-already-in-use': 'An account with this email already exists. Please sign in instead.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/weak-password': 'Please choose a stronger password.'
+      };
+      setStatus(messages[error.code] || 'Unable to create the account. Please try again.', 'error');
+      submitButton.disabled = false;
+    }
+  });
+
   googleButton?.addEventListener('click', async () => {
     googleButton.disabled = true;
     setStatus('Opening Google sign-in…');
     try {
       await signInWithPopup(auth, googleProvider);
-      window.location.replace('dashboard.html');
     } catch (error) {
-      if (error.code !== 'auth/popup-closed-by-user') {
-        setStatus('Google sign-in was not completed. Please try again.', 'error');
-      } else {
-        setStatus('');
-      }
+      if (error.code !== 'auth/popup-closed-by-user') setStatus('Google sign-in was not completed. Please try again.', 'error');
+      else setStatus('');
       googleButton.disabled = false;
     }
   });
 }
 
-if (isMemberPage) {
-  const accountEmail = document.querySelector('#account-email, #member-email');
-  const accountName = document.querySelector('#account-name, #member-name');
-  const signOutButton = document.querySelector('#sign-out');
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.replace('auth.html');
-      return;
-    }
-
-    if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
-    if (accountName) accountName.textContent = user.displayName || 'V2 Member';
-  });
-
-  signOutButton?.addEventListener('click', async () => {
-    signOutButton.disabled = true;
-    try {
+const renderSignedInNavigation = () => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  const html = '<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a><a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>';
+  [desktopNav, mobileNav].forEach((nav) => {
+    if (!nav) return;
+    nav.innerHTML = html;
+    nav.querySelector('.nav-sign-out')?.addEventListener('click', async () => {
       await signOut(auth);
-      window.location.replace('auth.html');
-    } catch {
-      signOutButton.disabled = false;
-    }
+      window.location.replace('index.html');
+    });
+  });
+};
+
+const renderSignedOutNavigation = () => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  if (!desktopNav || !mobileNav) return;
+  const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a>';
+  desktopNav.innerHTML = publicHtml;
+  mobileNav.innerHTML = publicHtml;
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    renderSignedOutNavigation();
+    if (isMemberPage) window.location.replace('auth.html');
+    return;
+  }
+  renderSignedInNavigation();
+  const email = document.querySelector('#account-email, #member-email');
+  const name = document.querySelector('#account-name, #member-name');
+  if (email) email.textContent = user.email || 'Signed-in user';
+  if (name) name.textContent = user.displayName || 'V2 Member';
+});
+
+if (isMemberPage) {
+  document.querySelector('#sign-out')?.addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.replace('index.html');
   });
 }
