@@ -1,16 +1,102 @@
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
+const functions = getFunctions(app, 'europe-west1');
+const getMyRole = httpsCallable(functions, 'getMyRole');
 const googleProvider = new GoogleAuthProvider();
-const isSignInPage = window.location.pathname.endsWith('/auth.html');
-const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
+const path = window.location.pathname;
+const isHomePage = path.endsWith('/') || path.endsWith('/index.html') || path === '';
+const isSignInPage = path.endsWith('/auth.html');
+const isAdminPage = path.endsWith('/admin.html');
+const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html') || isAdminPage;
 
 const setStatus = (message, type = '') => {
   const status = document.querySelector('#auth-status');
   if (!status) return;
   status.textContent = message;
   status.className = `auth-status ${type}`.trim();
+};
+
+const injectPrivateNavStyles = () => {
+  if (document.querySelector('#v2-private-nav-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'v2-private-nav-styles';
+  style.textContent = `.desktop-nav .nav-sign-out{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.desktop-nav .nav-sign-out:hover{color:#b58a4b}.desktop-nav a{display:inline-flex!important;align-items:center}.mobile-nav .nav-sign-out{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;text-transform:uppercase;letter-spacing:.08em;font-size:13px;cursor:pointer}.mobile-nav .nav-sign-out:hover{color:#b58a4b}`;
+  document.head.appendChild(style);
+};
+
+const roleLabel = (role) => role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : 'Member';
+
+const closeMobileNav = () => {
+  const mobileNav = document.querySelector('.mobile-nav');
+  const menuToggle = document.querySelector('.menu-toggle');
+  mobileNav?.classList.remove('open');
+  menuToggle?.setAttribute('aria-expanded', 'false');
+  if (menuToggle) menuToggle.textContent = 'Menu';
+};
+
+const renderSignedInNavigation = (role) => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  const adminLink = role === 'admin' || role === 'superadmin'
+    ? '<a href="admin.html">Admin</a>'
+    : '';
+  const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
+
+  injectPrivateNavStyles();
+
+  [desktopNav, mobileNav].forEach((nav) => {
+    if (!nav) return;
+    nav.innerHTML = html;
+    nav.querySelector('.nav-sign-out')?.addEventListener('click', async () => {
+      const button = nav.querySelector('.nav-sign-out');
+      button.disabled = true;
+      try {
+        await signOut(auth);
+        window.location.replace('index.html');
+      } catch {
+        button.disabled = false;
+      }
+    });
+  });
+
+  mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMobileNav));
+  mobileNav?.querySelector('.nav-sign-out')?.addEventListener('click', closeMobileNav);
+  document.body.dataset.authRole = role;
+};
+
+const renderSignedOutNavigation = () => {
+  const desktopNav = document.querySelector('.desktop-nav');
+  const mobileNav = document.querySelector('.mobile-nav');
+  if (!desktopNav || !mobileNav) return;
+
+  const homeHref = isHomePage ? '#top' : 'index.html';
+  const contactHref = isHomePage ? '#contact' : 'index.html#contact';
+  const currentPage = path.endsWith('/about.html') ? 'about.html'
+    : path.endsWith('/services.html') ? 'services.html'
+    : path.endsWith('/strategy-day.html') ? 'strategy-day.html'
+    : path.endsWith('/workshops.html') ? 'workshops.html'
+    : '';
+  const current = (page) => currentPage === page ? ' aria-current="page"' : '';
+  const publicHtml = `<a href="${homeHref}">Home</a><a href="about.html"${current('about.html')}>About</a><a href="services.html"${current('services.html')}>Services</a><a href="strategy-day.html"${current('strategy-day.html')}>Strategy Day</a><a href="workshops.html"${current('workshops.html')}>Workshops</a><a href="${contactHref}">Contact</a><a class="sign-in-link" href="auth.html">Sign In</a>`;
+
+  desktopNav.innerHTML = publicHtml;
+  mobileNav.innerHTML = publicHtml;
+  delete document.body.dataset.authRole;
+};
+
+const resolveRole = async (user) => {
+  try {
+    const result = await getMyRole();
+    const role = result.data?.role || 'member';
+    await user.getIdToken(true);
+    return role;
+  } catch {
+    const token = await user.getIdTokenResult();
+    return token.claims.role || 'member';
+  }
 };
 
 if (isSignInPage) {
@@ -62,26 +148,42 @@ if (isSignInPage) {
   });
 }
 
-if (isMemberPage) {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    renderSignedOutNavigation();
+    if (isMemberPage) window.location.replace('auth.html');
+    return;
+  }
+
+  const role = await resolveRole(user);
+  renderSignedInNavigation(role);
+
   const accountEmail = document.querySelector('#account-email, #member-email');
   const accountName = document.querySelector('#account-name, #member-name');
-  const signOutButton = document.querySelector('#sign-out');
+  if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
+  if (accountName) accountName.textContent = user.displayName || 'V2 Member';
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.replace('auth.html');
-      return;
-    }
+  if (isAdminPage && role !== 'admin' && role !== 'superadmin') {
+    window.location.replace('dashboard.html');
+    return;
+  }
 
-    if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
-    if (accountName) accountName.textContent = user.displayName || 'V2 Member';
+  document.querySelectorAll('[data-auth-role]').forEach((element) => {
+    element.textContent = roleLabel(role);
   });
 
-  signOutButton?.addEventListener('click', async () => {
+  document.dispatchEvent(new CustomEvent('v2-auth-ready', {
+    detail: { user, role }
+  }));
+});
+
+if (isMemberPage) {
+  document.querySelector('#sign-out')?.addEventListener('click', async (event) => {
+    const signOutButton = event.currentTarget;
     signOutButton.disabled = true;
     try {
       await signOut(auth);
-      window.location.replace('auth.html');
+      window.location.replace('index.html');
     } catch {
       signOutButton.disabled = false;
     }
