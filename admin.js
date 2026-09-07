@@ -42,8 +42,8 @@ const rolePill = (role) => {
 
 const roleOptions = (role, uid) => {
   const isSelf = auth.currentUser?.uid === uid;
-  const isSuperadmin = role === 'superadmin';
   if (isSelf || role === 'superadmin') return '';
+  if (role === 'admin' && currentRole !== 'superadmin') return '';
 
   const allowedRoles = currentRole === 'superadmin'
     ? ['member', 'pro', 'admin']
