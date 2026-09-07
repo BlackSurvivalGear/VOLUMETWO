@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Sign in to the Volume Two business dashboard.">
+  <meta name="description" content="Sign in or create a member account for the Volume Two business dashboard.">
   <meta name="theme-color" content="#101114">
   <title>Sign In | Volume Two</title>
   <link rel="icon" type="image/png" href="FAVI.png">
@@ -42,7 +42,23 @@
 
       <div class="auth-divider"><span>or</span></div>
       <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+
+      <div class="auth-divider"><span>new to Volume Two?</span></div>
+      <form id="create-account-form" novalidate>
+        <label for="new-email">Email address</label>
+        <input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
+
+        <label for="new-password">Create password</label>
+        <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
+
+        <label for="new-password-confirm">Confirm password</label>
+        <input id="new-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat your password">
+
+        <button class="auth-submit auth-create" type="submit">Create Member Account <span>↗</span></button>
+      </form>
+
       <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
+      <p class="auth-help">New accounts are created as <strong>Member</strong>. Pro and administrator access is assigned separately according to account permissions.</p>
       <p class="auth-help">Need access to the V2 dashboard? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
     </div>
   </section>
@@ -50,6 +66,6 @@
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
-<script type="module" src="auth.js?v=2"></script>
+<script type="module" src="auth.js?v=4"></script>
 </body>
 </html>
