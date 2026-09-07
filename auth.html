@@ -3,12 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Sign in to the Volume Two business dashboard.">
+  <meta name="description" content="Sign in or create a member account for the Volume Two business dashboard.">
   <meta name="theme-color" content="#101114">
   <title>Sign In | Volume Two</title>
   <link rel="icon" type="image/png" href="FAVI.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="auth.css">
+  <style>
+    .auth-create-heading{margin-top:28px;padding-top:24px;border-top:1px solid rgba(16,17,20,.16)}
+    .auth-create-heading span{display:block;margin-bottom:8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#b58a4b}
+    .auth-create-heading h3{margin:0;font-size:22px;font-weight:500}
+    .auth-create-form{margin-top:18px}
+    .auth-create-note{margin:14px 0 0;font-size:12px;line-height:1.6;color:#687078}
+    .auth-status.error{color:#9d3f3f}
+  </style>
 </head>
 <body class="auth-page">
 <header class="site-header">
@@ -42,6 +50,25 @@
 
       <div class="auth-divider"><span>or</span></div>
       <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+
+      <div class="auth-create-heading">
+        <span>New to Volume Two?</span>
+        <h3>Create your member account.</h3>
+      </div>
+      <form id="create-account-form" class="auth-create-form" novalidate>
+        <label for="new-email">Email address</label>
+        <input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
+
+        <label for="new-password">Create password</label>
+        <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
+
+        <label for="new-password-confirm">Confirm password</label>
+        <input id="new-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat your password">
+
+        <button class="auth-submit" type="submit">Create Member Account <span>↗</span></button>
+      </form>
+      <p class="auth-create-note">New accounts start as <strong>Member</strong>. Member access includes the dashboard and available Business Tools.</p>
+
       <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
       <p class="auth-help">Need access to the V2 dashboard? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
     </div>
