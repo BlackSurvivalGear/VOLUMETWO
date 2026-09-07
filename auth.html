@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sign in to the Volume Two business dashboard.">
+  <meta name="theme-color" content="#101114">
+  <title>Sign In | Volume Two</title>
+  <link rel="icon" type="image/png" href="FAVI.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-page">
+<header class="site-header">
+  <a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a>
+  <a class="auth-back" href="index.html">Back to site <span>↗</span></a>
+</header>
+
+<main class="auth-main">
+  <section class="auth-panel" aria-labelledby="auth-title">
+    <div class="auth-copy">
+      <p class="eyebrow">Volume Two / Member access</p>
+      <h1>Sign in to your<br><em>business dashboard.</em></h1>
+      <p>Access the private V2 workspace where business tools, resources and member services will live.</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-card-heading">
+        <span>V2 / 01</span>
+        <h2 id="auth-title">Welcome back.</h2>
+      </div>
+
+      <form id="sign-in-form" novalidate>
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+
+        <button class="auth-submit" type="submit">Sign In <span>↗</span></button>
+      </form>
+
+      <div class="auth-divider"><span>or</span></div>
+      <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+      <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
+      <p class="auth-help">Need access to the V2 dashboard? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
+<script src="script.js"></script>
+<script type="module" src="auth.js"></script>
+</body>
+</html>
