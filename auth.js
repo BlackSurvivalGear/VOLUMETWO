@@ -7,14 +7,22 @@ const path = window.location.pathname;
 const isHomePage = path.endsWith('/') || path.endsWith('/index.html') || path === '';
 const isSignInPage = path.endsWith('/auth.html');
 const isAdminPage = path.endsWith('/admin.html');
-const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html') || isAdminPage;
+const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html');
+const isProtectedPage = isMemberPage || isAdminPage;
+
 const SUPERADMIN_EMAIL = 'admin@lawal.org';
+const ROLES = ['member', 'pro', 'admin', 'superadmin'];
 const ROLE_LABELS = {
   member: 'Member',
   pro: 'Pro',
   admin: 'Admin',
   superadmin: 'Superadmin'
 };
+
+const normaliseEmail = (email) => String(email || '').trim().toLowerCase();
+const isSuperadminIdentity = (user) => normaliseEmail(user?.email) === SUPERADMIN_EMAIL;
+const isElevatedRole = (role) => role === 'admin' || role === 'superadmin';
+const roleLabel = (role) => ROLE_LABELS[role] || ROLE_LABELS.member;
 
 const setStatus = (message, type = '') => {
   const status = document.querySelector('#auth-status');
@@ -31,8 +39,6 @@ const injectPrivateNavStyles = () => {
   document.head.appendChild(style);
 };
 
-const roleLabel = (role) => ROLE_LABELS[role] || 'Member';
-
 const closeMobileNav = () => {
   const mobileNav = document.querySelector('.mobile-nav');
   const menuToggle = document.querySelector('.menu-toggle');
@@ -44,9 +50,7 @@ const closeMobileNav = () => {
 const renderSignedInNavigation = (role) => {
   const desktopNav = document.querySelector('.desktop-nav');
   const mobileNav = document.querySelector('.mobile-nav');
-  const adminLink = role === 'admin' || role === 'superadmin'
-    ? '<a href="admin.html">Admin Dashboard</a>'
-    : '';
+  const adminLink = isElevatedRole(role) ? '<a href="admin.html">Admin Dashboard</a>' : '';
   const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
 
   injectPrivateNavStyles();
@@ -91,24 +95,42 @@ const renderSignedOutNavigation = () => {
   delete document.body.dataset.authRole;
 };
 
+const getTokenRole = async (user, forceRefresh = false) => {
+  const token = await user.getIdTokenResult(forceRefresh);
+  const role = token.claims?.role;
+  return ROLES.includes(role) ? role : null;
+};
+
+const getServerRole = async (user) => {
+  const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js");
+  const functions = getFunctions(app, 'europe-west1');
+  const getMyRole = httpsCallable(functions, 'getMyRole');
+  const result = await getMyRole();
+  await user.getIdToken(true);
+  return ROLES.includes(result.data?.role) ? result.data.role : 'member';
+};
+
 const resolveRole = async (user) => {
+  // Public pages never call the administrative backend. They only read the
+  // signed-in token, so a normal member can safely browse the public site.
+  if (!isProtectedPage) {
+    return (await getTokenRole(user)) || (isSuperadminIdentity(user) ? 'superadmin' : 'member');
+  }
+
+  // Protected pages ask the server for the authoritative role. The server
+  // bootstraps new accounts as Member and admin@lawal.org as Superadmin.
   try {
-    const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js");
-    const functions = getFunctions(app, 'europe-west1');
-    const getMyRole = httpsCallable(functions, 'getMyRole');
-    const result = await getMyRole();
-    await user.getIdToken(true);
-    return result.data?.role || 'member';
+    return await getServerRole(user);
   } catch {
-    if (String(user.email || '').trim().toLowerCase() === SUPERADMIN_EMAIL) return 'superadmin';
-    const token = await user.getIdTokenResult();
-    return ROLE_LABELS[token.claims.role] ? token.claims.role : 'member';
+    const tokenRole = await getTokenRole(user);
+    if (tokenRole) return tokenRole;
+    return isSuperadminIdentity(user) ? 'superadmin' : 'member';
   }
 };
 
 const routeAfterSignIn = () => {
-  // All roles enter through the member dashboard. Elevated roles receive
-  // their additional controls after the role has been resolved there.
+  // One entry point for every role. Admins and superadmins receive their
+  // separate Admin Dashboard control after the member dashboard loads.
   window.location.replace('dashboard.html');
 };
 
@@ -117,7 +139,7 @@ if (isSignInPage) {
   const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
 
-  onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(auth, (user) => {
     if (user) routeAfterSignIn();
   });
 
@@ -132,7 +154,6 @@ if (isSignInPage) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      routeAfterSignIn();
     } catch (error) {
       const messages = {
         'auth/invalid-credential': 'The email or password is incorrect.',
@@ -162,7 +183,6 @@ if (isSignInPage) {
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      routeAfterSignIn();
     } catch (error) {
       const messages = {
         'auth/email-already-in-use': 'An account with this email already exists. Please sign in instead.',
@@ -179,7 +199,6 @@ if (isSignInPage) {
     setStatus('Opening Google sign-in…');
     try {
       await signInWithPopup(auth, googleProvider);
-      routeAfterSignIn();
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') {
         setStatus('Google sign-in was not completed. Please try again.', 'error');
@@ -194,7 +213,7 @@ if (isSignInPage) {
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     renderSignedOutNavigation();
-    if (isMemberPage) window.location.replace('auth.html');
+    if (isProtectedPage) window.location.replace('auth.html');
     return;
   }
 
@@ -207,11 +226,9 @@ onAuthStateChanged(auth, async (user) => {
   if (accountName) accountName.textContent = user.displayName || 'V2 Member';
 
   const adminDashboardLink = document.querySelector('[data-admin-dashboard]');
-  if (adminDashboardLink) {
-    adminDashboardLink.hidden = role !== 'admin' && role !== 'superadmin';
-  }
+  if (adminDashboardLink) adminDashboardLink.hidden = !isElevatedRole(role);
 
-  if (isAdminPage && role !== 'admin' && role !== 'superadmin') {
+  if (isAdminPage && !isElevatedRole(role)) {
     window.location.replace('dashboard.html');
     return;
   }
@@ -225,7 +242,7 @@ onAuthStateChanged(auth, async (user) => {
   }));
 });
 
-if (isMemberPage) {
+if (isMemberPage || isAdminPage) {
   document.querySelector('#sign-out')?.addEventListener('click', async (event) => {
     const signOutButton = event.currentTarget;
     signOutButton.disabled = true;
