@@ -1,1 +1,52 @@
 <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sign in or create a member account for the Volume Two business dashboard.">
+  <meta name="theme-color" content="#101114">
+  <title>Sign In | Volume Two</title>
+  <link rel="icon" type="image/png" href="FAVI.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css?v=3">
+</head>
+<body class="auth-page">
+<header class="site-header">
+  <a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a>
+  <a class="auth-back" href="index.html">Back to site <span>↗</span></a>
+</header>
+<main class="auth-main">
+  <section class="auth-panel" aria-labelledby="auth-title">
+    <div class="auth-copy"><p class="eyebrow">Volume Two / Member access</p><h1>Build your<br><em>next move.</em></h1><p>Your private V2 workspace for practical business tools, resources and services.</p></div>
+    <div class="auth-card">
+      <div class="auth-card-heading"><span id="auth-kicker">V2 / 01</span><h2 id="auth-title">Sign in to V2.</h2></div>
+      <div id="sign-in-view">
+        <form id="sign-in-form" novalidate>
+          <label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
+          <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+          <button class="auth-submit" type="submit">Sign In <span>↗</span></button>
+        </form>
+        <div class="auth-divider"><span>or</span></div>
+        <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+        <button class="auth-switch" id="show-create-account" type="button">New to Volume Two? <strong>Create account</strong></button>
+      </div>
+      <div id="create-account-view" hidden>
+        <p class="auth-view-intro">Create your personal V2 account and get immediate access to the member dashboard.</p>
+        <form id="create-account-form" novalidate>
+          <label for="new-email">Email address</label><input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
+          <label for="new-password">Password</label><input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
+          <label for="new-password-confirm">Confirm password</label><input id="new-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat your password">
+          <button class="auth-submit" type="submit">Create Account <span>↗</span></button>
+        </form>
+        <p class="auth-member-note">New accounts are created as <strong>Member</strong> and open the member dashboard after registration.</p>
+        <button class="auth-switch auth-switch-back" id="show-sign-in" type="button">Already have an account? <strong>Sign in</strong></button>
+      </div>
+      <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
+      <p class="auth-help">Need dashboard access? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
+    </div>
+  </section>
+</main>
+<footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
+<script src="script.js"></script><script type="module" src="auth.js?v=3"></script>
+</body>
+</html>
