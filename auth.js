@@ -7,6 +7,7 @@ const functions = getFunctions(app, 'europe-west1');
 const getMyRole = httpsCallable(functions, 'getMyRole');
 const googleProvider = new GoogleAuthProvider();
 const path = window.location.pathname;
+const isHomePage = path.endsWith('/') || path.endsWith('/index.html') || path === '';
 const isSignInPage = path.endsWith('/auth.html');
 const isAdminPage = path.endsWith('/admin.html');
 const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html') || isAdminPage;
@@ -61,17 +62,18 @@ const renderSignedOutNavigation = () => {
   const mobileNav = document.querySelector('.mobile-nav');
   if (!desktopNav || !mobileNav) return;
 
-  const publicLinks = desktopNav.querySelectorAll('a:not(.sign-in-link)');
-  const mobileLinks = mobileNav.querySelectorAll('a:not(.sign-in-link)');
-  const publicHtml = Array.from(publicLinks).map((link) => link.outerHTML).join('');
-  const mobileHtml = Array.from(mobileLinks).map((link) => link.outerHTML).join('');
+  const homeHref = isHomePage ? '#top' : 'index.html';
+  const contactHref = isHomePage ? '#contact' : 'index.html#contact';
+  const currentPage = path.endsWith('/about.html') ? 'about.html'
+    : path.endsWith('/services.html') ? 'services.html'
+    : path.endsWith('/strategy-day.html') ? 'strategy-day.html'
+    : path.endsWith('/workshops.html') ? 'workshops.html'
+    : '';
+  const current = (page) => currentPage === page ? ' aria-current="page"' : '';
+  const publicHtml = `<a href="${homeHref}">Home</a><a href="about.html"${current('about.html')}>About</a><a href="services.html"${current('services.html')}>Services</a><a href="strategy-day.html"${current('strategy-day.html')}>Strategy Day</a><a href="workshops.html"${current('workshops.html')}>Workshops</a><a href="${contactHref}">Contact</a><a class="sign-in-link" href="auth.html">Sign In</a>`;
 
-  if (!desktopNav.querySelector('.sign-in-link')) {
-    desktopNav.innerHTML = `${publicHtml}<a class="sign-in-link" href="auth.html">Sign In</a>`;
-  }
-  if (!mobileNav.querySelector('.sign-in-link')) {
-    mobileNav.innerHTML = `${mobileHtml}<a class="sign-in-link" href="auth.html">Sign In</a>`;
-  }
+  desktopNav.innerHTML = publicHtml;
+  mobileNav.innerHTML = publicHtml;
   delete document.body.dataset.authRole;
 };
 
