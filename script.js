@@ -17,4 +17,19 @@ if (menuToggle && mobileNav) {
   });
 }
 
+const brandMark = document.querySelector('.brand-mark');
+if (brandMark) {
+  const logo = document.createElement('img');
+  logo.className = 'brand-logo';
+  logo.src = 'FAVI.png';
+  logo.alt = 'Volume Two';
+  logo.width = 42;
+  logo.height = 42;
+  logo.style.width = '42px';
+  logo.style.height = '42px';
+  logo.style.objectFit = 'contain';
+  logo.style.display = 'block';
+  brandMark.replaceWith(logo);
+}
+
 document.querySelector('#year').textContent = new Date().getFullYear();
