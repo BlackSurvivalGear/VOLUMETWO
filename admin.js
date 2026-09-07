@@ -71,19 +71,27 @@ const renderUsers = (users) => {
   tableBody.innerHTML = users.map((user) => {
     const isSelf = auth.currentUser?.uid === user.uid;
     const isSuperadmin = user.role === 'superadmin';
-    const canChangeStatus = !isSelf && !isSuperadmin;
-    const canDelete = !isSelf && !isSuperadmin;
+    const isOtherAdmin = user.role === 'admin' && currentRole !== 'superadmin';
+    const canManageStatus = !isSelf && !isSuperadmin && !isOtherAdmin;
+    const canDelete = !isSelf && !isSuperadmin && !isOtherAdmin;
     const displayName = user.displayName || 'Unnamed user';
     const statusClass = user.disabled ? 'suspended' : 'active';
     const statusLabel = user.disabled ? 'Suspended' : 'Active';
     const verification = user.emailVerified ? 'Verified' : 'Unverified';
     const accountMeta = [user.provider || 'unknown provider', verification].join(' · ');
-    const statusControl = canChangeStatus
+    const statusControl = canManageStatus
       ? `<button class="admin-action" type="button" data-action="status" data-uid="${escapeHtml(user.uid)}" data-disabled="${user.disabled}">${user.disabled ? 'Resume' : 'Suspend'}</button>`
       : '';
     const deleteControl = canDelete
       ? `<button class="admin-action danger" type="button" data-action="delete" data-uid="${escapeHtml(user.uid)}">Delete</button>`
       : '';
+    const protectedLabel = isSelf
+      ? 'Your account'
+      : isSuperadmin
+        ? 'Protected account'
+        : isOtherAdmin
+          ? 'Superadmin only'
+          : '';
 
     return `<tr>
       <td><span class="user-name">${escapeHtml(displayName)}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span><span class="user-email">${escapeHtml(accountMeta)}</span></td>
@@ -91,7 +99,7 @@ const renderUsers = (users) => {
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
       <td>${escapeHtml(formatDate(user.createdAt))}</td>
       <td>${escapeHtml(formatDate(user.lastSignInAt))}</td>
-      <td><div class="admin-actions">${roleOptions(user.role, user.uid)}${statusControl}${deleteControl || '<span class="user-email">Protected account</span>'}</div></td>
+      <td><div class="admin-actions">${roleOptions(user.role, user.uid)}${statusControl}${deleteControl || `<span class="user-email">${protectedLabel}</span>`}</div></td>
     </tr>`;
   }).join('');
 };
