@@ -40,6 +40,28 @@ async function requireAdmin(request) {
   return role;
 }
 
+async function getTargetRole(uid) {
+  const target = await auth.getUser(uid);
+  return {
+    user: target,
+    role: normaliseEmail(target.email) === SUPERADMIN_EMAIL
+      ? 'superadmin'
+      : (target.customClaims?.role || 'member')
+  };
+}
+
+async function assertCanManageTarget(callerRole, callerUid, targetUid) {
+  if (callerUid === targetUid) {
+    throw new HttpsError('failed-precondition', 'You cannot manage your own account.');
+  }
+
+  const { user, role } = await getTargetRole(targetUid);
+  if (callerRole === 'admin' && role === 'superadmin') {
+    throw new HttpsError('permission-denied', 'Only a superadmin can manage the superadmin account.');
+  }
+  return { user, role };
+}
+
 async function listAllUsers() {
   const users = [];
   let pageToken;
@@ -85,7 +107,7 @@ exports.listUsers = onCall({ region: REGION }, async (request) => {
 });
 
 exports.setUserDisabled = onCall({ region: REGION }, async (request) => {
-  await requireAdmin(request);
+  const callerRole = await requireAdmin(request);
   const uid = String(request.data?.uid || '').trim();
   const disabled = request.data?.disabled;
 
@@ -93,27 +115,21 @@ exports.setUserDisabled = onCall({ region: REGION }, async (request) => {
     throw new HttpsError('invalid-argument', 'A user ID and boolean disabled value are required.');
   }
 
-  if (uid === request.auth.uid) {
-    throw new HttpsError('failed-precondition', 'You cannot suspend your own account.');
-  }
-
+  await assertCanManageTarget(callerRole, request.auth.uid, uid);
   await auth.updateUser(uid, { disabled });
   if (disabled) await auth.revokeRefreshTokens(uid);
   return { success: true, disabled };
 });
 
 exports.deleteUser = onCall({ region: REGION }, async (request) => {
-  await requireAdmin(request);
+  const callerRole = await requireAdmin(request);
   const uid = String(request.data?.uid || '').trim();
 
   if (!uid) {
     throw new HttpsError('invalid-argument', 'A user ID is required.');
   }
 
-  if (uid === request.auth.uid) {
-    throw new HttpsError('failed-precondition', 'You cannot delete your own account.');
-  }
-
+  await assertCanManageTarget(callerRole, request.auth.uid, uid);
   await auth.deleteUser(uid);
   return { success: true };
 });
