@@ -115,10 +115,9 @@ const resolveRole = async (user) => {
   }
 };
 
-const routeAfterSignIn = async (user) => {
-  await resolveRole(user);
-  // All successful sign-ins land in the member dashboard first. Admins and
-  // superadmins get a separate Admin Dashboard button from that dashboard.
+const routeAfterSignIn = () => {
+  // Every successful sign-in lands in the member dashboard first. Admins and
+  // superadmins get a separate Admin Dashboard button there.
   window.location.replace('dashboard.html');
 };
 
@@ -127,7 +126,7 @@ if (isSignInPage) {
   const googleButton = document.querySelector('#google-sign-in');
 
   onAuthStateChanged(auth, async (user) => {
-    if (user) await routeAfterSignIn(user);
+    if (user) routeAfterSignIn();
   });
 
   form?.addEventListener('submit', async (event) => {
@@ -141,7 +140,7 @@ if (isSignInPage) {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      await routeAfterSignIn(credential.user);
+      routeAfterSignIn(credential.user);
     } catch (error) {
       const messages = {
         'auth/invalid-credential': 'The email or password is incorrect.',
@@ -159,7 +158,7 @@ if (isSignInPage) {
     setStatus('Opening Google sign-in…');
     try {
       const credential = await signInWithPopup(auth, googleProvider);
-      await routeAfterSignIn(credential.user);
+      routeAfterSignIn(credential.user);
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') {
         setStatus('Google sign-in was not completed. Please try again.', 'error');
