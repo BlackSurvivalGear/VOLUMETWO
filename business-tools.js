@@ -175,6 +175,58 @@ if (invoiceForm) {
   printInvoiceButton?.addEventListener('click', () => { updateInvoicePreview(); window.print(); });
 }
 
+const socialPlatforms = {
+  instagram: { label: 'Instagram username', placeholder: '@yourbusiness', hint: 'Enter your Instagram username. The QR code will point directly to your profile.', build: (value) => `https://instagram.com/${value.replace(/^@/, '')}` },
+  facebook: { label: 'Facebook page or username', placeholder: 'yourbusiness', hint: 'Enter your Facebook page username or full page URL.', build: (value) => value.startsWith('http') ? value : `https://facebook.com/${value.replace(/^@/, '')}` },
+  x: { label: 'X username', placeholder: '@yourbusiness', hint: 'Enter your X username. The QR code will point directly to your profile.', build: (value) => `https://x.com/${value.replace(/^@/, '')}` },
+  linkedin: { label: 'LinkedIn profile or company URL', placeholder: 'https://linkedin.com/company/yourbusiness', hint: 'Paste your LinkedIn profile or company URL.', build: (value) => value.startsWith('http') ? value : `https://linkedin.com/in/${value.replace(/^@/, '')}` },
+  tiktok: { label: 'TikTok username', placeholder: '@yourbusiness', hint: 'Enter your TikTok username. The QR code will point directly to your profile.', build: (value) => `https://tiktok.com/@${value.replace(/^@/, '')}` },
+  youtube: { label: 'YouTube channel URL or handle', placeholder: '@yourchannel or https://youtube.com/@yourchannel', hint: 'Enter your YouTube handle or paste the complete channel URL.', build: (value) => value.startsWith('http') ? value : `https://youtube.com/@${value.replace(/^@/, '')}` },
+  whatsapp: { label: 'WhatsApp number or link', placeholder: '+447842110899 or https://wa.me/447842110899', hint: 'Use an international phone number or paste a WhatsApp link. Include the country code.', build: (value) => value.startsWith('http') ? value : `https://wa.me/${value.replace(/[^0-9]/g, '')}` },
+  telegram: { label: 'Telegram username or channel', placeholder: '@yourchannel', hint: 'Enter your Telegram username or channel handle.', build: (value) => value.startsWith('http') ? value : `https://t.me/${value.replace(/^@/, '')}` },
+  threads: { label: 'Threads username', placeholder: '@yourbusiness', hint: 'Enter your Threads username. The QR code will point directly to your profile.', build: (value) => `https://threads.net/@${value.replace(/^@/, '')}` },
+  custom: { label: 'Destination URL', placeholder: 'https://example.com', hint: 'Paste any website, booking page, payment link or other destination.', build: (value) => value }
+};
+
+const socialHandle = document.querySelector('#social-handle');
+const socialHandleLabel = document.querySelector('#social-handle-label');
+const socialHint = document.querySelector('#social-hint');
+let selectedPlatform = 'instagram';
+
+const setSocialPlatform = (platform) => {
+  const config = socialPlatforms[platform] || socialPlatforms.custom;
+  selectedPlatform = platform;
+  document.querySelectorAll('.social-platform').forEach((button) => {
+    const active = button.dataset.platform === platform;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  if (socialHandleLabel) socialHandleLabel.firstChild.textContent = `${config.label}`;
+  if (socialHandle) {
+    socialHandle.placeholder = config.placeholder;
+    socialHandle.type = platform === 'custom' || platform === 'linkedin' || platform === 'facebook' || platform === 'youtube' ? 'url' : 'text';
+  }
+  if (socialHint) socialHint.textContent = config.hint;
+  const value = socialHandle?.value.trim() || '';
+  if (value) {
+    document.querySelector('#qr-content').value = config.build(value);
+  }
+};
+
+document.querySelectorAll('.social-platform').forEach((button) => {
+  button.addEventListener('click', () => setSocialPlatform(button.dataset.platform));
+});
+
+socialHandle?.addEventListener('input', () => {
+  const value = socialHandle.value.trim();
+  const config = socialPlatforms[selectedPlatform] || socialPlatforms.custom;
+  const content = document.querySelector('#qr-content');
+  if (content && value) content.value = config.build(value);
+  if (content && !value) content.value = '';
+});
+
+setSocialPlatform('instagram');
+
 const waitForQrCanvas = () => new Promise((resolve) => {
   const started = performance.now();
   const check = () => {
