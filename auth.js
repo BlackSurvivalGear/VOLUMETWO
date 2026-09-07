@@ -39,7 +39,7 @@ const renderSignedInNavigation = (role) => {
   const desktopNav = document.querySelector('.desktop-nav');
   const mobileNav = document.querySelector('.mobile-nav');
   const adminLink = role === 'admin' || role === 'superadmin'
-    ? '<a href="admin.html">Admin</a>'
+    ? '<a href="admin.html">Admin Dashboard</a>'
     : '';
   const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
 
@@ -116,8 +116,10 @@ const resolveRole = async (user) => {
 };
 
 const routeAfterSignIn = async (user) => {
-  const role = await resolveRole(user);
-  window.location.replace(role === 'admin' || role === 'superadmin' ? 'admin.html' : 'dashboard.html');
+  await resolveRole(user);
+  // All successful sign-ins land in the member dashboard first. Admins and
+  // superadmins get a separate Admin Dashboard button from that dashboard.
+  window.location.replace('dashboard.html');
 };
 
 if (isSignInPage) {
@@ -183,6 +185,11 @@ onAuthStateChanged(auth, async (user) => {
   const accountName = document.querySelector('#account-name, #member-name');
   if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
   if (accountName) accountName.textContent = user.displayName || 'V2 Member';
+
+  const adminDashboardLink = document.querySelector('[data-admin-dashboard]');
+  if (adminDashboardLink) {
+    adminDashboardLink.hidden = role !== 'admin' && role !== 'superadmin';
+  }
 
   if (isAdminPage && role !== 'admin' && role !== 'superadmin') {
     window.location.replace('dashboard.html');
