@@ -19,6 +19,25 @@ if (isSignInPage) {
   const form = document.querySelector('#sign-in-form');
   const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
+  const signInView = document.querySelector('#sign-in-view');
+  const createView = document.querySelector('#create-account-view');
+  const showCreateButton = document.querySelector('#show-create-account');
+  const showSignInButton = document.querySelector('#show-sign-in');
+  const title = document.querySelector('#auth-title');
+  const kicker = document.querySelector('#auth-kicker');
+
+  const showView = (view) => {
+    const creating = view === 'create';
+    if (signInView) signInView.hidden = creating;
+    if (createView) createView.hidden = !creating;
+    if (title) title.textContent = creating ? 'Create your V2 account.' : 'Sign in to V2.';
+    if (kicker) kicker.textContent = creating ? 'V2 / 02' : 'V2 / 01';
+    setStatus('');
+    document.querySelector(creating ? '#new-email' : '#email')?.focus();
+  };
+
+  showCreateButton?.addEventListener('click', () => showView('create'));
+  showSignInButton?.addEventListener('click', () => showView('signin'));
 
   onAuthStateChanged(auth, (user) => {
     if (user) routeAfterSignIn();
@@ -65,7 +84,7 @@ if (isSignInPage) {
     setStatus('Creating your member account…');
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      setStatus('Member account created. Opening your dashboard…');
+      routeAfterSignIn();
     } catch (error) {
       const messages = {
         'auth/email-already-in-use': 'An account with this email already exists. Please sign in instead.',
