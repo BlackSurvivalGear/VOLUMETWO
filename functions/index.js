@@ -85,7 +85,7 @@ exports.listUsers = onCall({ region: REGION }, async (request) => {
 });
 
 exports.setUserDisabled = onCall({ region: REGION }, async (request) => {
-  const callerRole = await requireAdmin(request);
+  await requireAdmin(request);
   const uid = String(request.data?.uid || '').trim();
   const disabled = request.data?.disabled;
 
@@ -97,23 +97,13 @@ exports.setUserDisabled = onCall({ region: REGION }, async (request) => {
     throw new HttpsError('failed-precondition', 'You cannot suspend your own account.');
   }
 
-  const target = await auth.getUser(uid);
-  const targetRole = normaliseEmail(target.email) === SUPERADMIN_EMAIL
-    ? 'superadmin'
-    : (target.customClaims?.role || 'member');
-
-  // Keep the designated superadmin protected from actions by ordinary admins.
-  if (callerRole === 'admin' && targetRole === 'superadmin') {
-    throw new HttpsError('permission-denied', 'Only a superadmin can change the superadmin account.');
-  }
-
   await auth.updateUser(uid, { disabled });
   if (disabled) await auth.revokeRefreshTokens(uid);
   return { success: true, disabled };
 });
 
 exports.deleteUser = onCall({ region: REGION }, async (request) => {
-  const callerRole = await requireAdmin(request);
+  await requireAdmin(request);
   const uid = String(request.data?.uid || '').trim();
 
   if (!uid) {
@@ -122,15 +112,6 @@ exports.deleteUser = onCall({ region: REGION }, async (request) => {
 
   if (uid === request.auth.uid) {
     throw new HttpsError('failed-precondition', 'You cannot delete your own account.');
-  }
-
-  const target = await auth.getUser(uid);
-  const targetRole = normaliseEmail(target.email) === SUPERADMIN_EMAIL
-    ? 'superadmin'
-    : (target.customClaims?.role || 'member');
-
-  if (callerRole === 'admin' && targetRole === 'superadmin') {
-    throw new HttpsError('permission-denied', 'Only a superadmin can delete the superadmin account.');
   }
 
   await auth.deleteUser(uid);
