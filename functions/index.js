@@ -7,6 +7,7 @@ initializeApp();
 const auth = getAuth();
 const REGION = 'europe-west1';
 const SUPERADMIN_EMAIL = 'admin@lawal.org';
+const ROLES = ['member', 'pro', 'admin', 'superadmin'];
 
 const normaliseEmail = (email) => String(email || '').trim().toLowerCase();
 
@@ -17,8 +18,8 @@ async function requireSignedIn(request) {
 
   const user = await auth.getUser(request.auth.uid);
 
-  // The designated superadmin is bootstrapped by the verified Firebase
-  // Authentication identity. No client can set this claim themselves.
+  // The designated superadmin is always resolved from the verified identity.
+  // No client can grant itself this role.
   if (normaliseEmail(user.email) === SUPERADMIN_EMAIL) {
     if (user.customClaims?.role !== 'superadmin') {
       await auth.setCustomUserClaims(request.auth.uid, {
@@ -29,7 +30,19 @@ async function requireSignedIn(request) {
     return 'superadmin';
   }
 
-  return user.customClaims?.role || 'member';
+  // Every newly created account receives an explicit member claim the first
+  // time its role is resolved. This keeps member as the safe default while
+  // making the account's role explicit for future dashboard permissions.
+  const role = user.customClaims?.role;
+  if (!ROLES.includes(role) || role === 'superadmin') {
+    await auth.setCustomUserClaims(request.auth.uid, {
+      ...(user.customClaims || {}),
+      role: 'member'
+    });
+    return 'member';
+  }
+
+  return role;
 }
 
 async function requireAdmin(request) {
@@ -46,7 +59,7 @@ async function getTargetRole(uid) {
     user: target,
     role: normaliseEmail(target.email) === SUPERADMIN_EMAIL
       ? 'superadmin'
-      : (target.customClaims?.role || 'member')
+      : (ROLES.includes(target.customClaims?.role) ? target.customClaims.role : 'member')
   };
 }
 
@@ -79,7 +92,7 @@ const serialiseUser = (user) => {
   const claims = user.customClaims || {};
   const role = normaliseEmail(user.email) === SUPERADMIN_EMAIL
     ? 'superadmin'
-    : (claims.role || 'member');
+    : (ROLES.includes(claims.role) ? claims.role : 'member');
 
   return {
     uid: user.uid,
@@ -97,7 +110,7 @@ const serialiseUser = (user) => {
 
 exports.getMyRole = onCall({ region: REGION }, async (request) => {
   const role = await requireSignedIn(request);
-  return { role };
+  return { role, roles: ROLES };
 });
 
 exports.listUsers = onCall({ region: REGION }, async (request) => {
@@ -135,16 +148,12 @@ exports.deleteUser = onCall({ region: REGION }, async (request) => {
 });
 
 exports.setUserRole = onCall({ region: REGION }, async (request) => {
-  const callerRole = await requireSignedIn(request);
-  if (callerRole !== 'superadmin') {
-    throw new HttpsError('permission-denied', 'Only a superadmin can change user roles.');
-  }
-
+  const callerRole = await requireAdmin(request);
   const uid = String(request.data?.uid || '').trim();
   const role = String(request.data?.role || '').trim().toLowerCase();
 
-  if (!uid || !['member', 'admin'].includes(role)) {
-    throw new HttpsError('invalid-argument', 'A user ID and role of member or admin are required.');
+  if (!uid || !['member', 'pro', 'admin'].includes(role)) {
+    throw new HttpsError('invalid-argument', 'A user ID and role of member, pro, or admin are required.');
   }
 
   if (uid === request.auth.uid) {
@@ -156,13 +165,17 @@ exports.setUserRole = onCall({ region: REGION }, async (request) => {
     throw new HttpsError('failed-precondition', 'The designated superadmin role cannot be changed here.');
   }
 
-  const currentClaims = { ...(target.customClaims || {}) };
-  if (role === 'member') {
-    delete currentClaims.role;
-  } else {
-    currentClaims.role = 'admin';
+  const currentRole = ROLES.includes(target.customClaims?.role)
+    ? target.customClaims.role
+    : 'member';
+
+  // Admins may manage the member/pro access tiers, but only the superadmin
+  // can grant or remove the administrator role.
+  if ((role === 'admin' || currentRole === 'admin') && callerRole !== 'superadmin') {
+    throw new HttpsError('permission-denied', 'Only a superadmin can grant or remove the admin role.');
   }
 
+  const currentClaims = { ...(target.customClaims || {}), role };
   await auth.setCustomUserClaims(uid, currentClaims);
   return { success: true, role };
 });
