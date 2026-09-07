@@ -8,30 +8,61 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn() && (uid == request.auth.uid || isAdmin());
+
       allow create: if signedIn()
         && uid == request.auth.uid
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.suspended == false
+        && request.resource.data.plan == 'free'
+        && request.resource.data.accountStatus == 'active'
+        && request.resource.data.businessId == null
         && (request.resource.data.role == 'member' || (isSuperadmin() && request.resource.data.role == 'superadmin'));
-      allow update: if signedIn() && uid == request.auth.uid
+
+      allow update: if
+        signedIn()
+        && uid == request.auth.uid
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.role == resource.data.role
         && request.resource.data.suspended == resource.data.suspended
+        && request.resource.data.plan == resource.data.get('plan', 'free')
+        && request.resource.data.accountStatus == resource.data.get('accountStatus', resource.data.get('suspended', false) ? 'suspended' : 'active')
+        && request.resource.data.businessId == resource.data.get('businessId', null)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'phone', 'lastSignInAt', 'lastActiveAt', 'updatedAt',
+          'plan', 'accountStatus', 'businessId'
+        ])
+
+        || isSuperadmin()
+          && uid == request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.role == 'superadmin'
+          && request.resource.data.suspended == resource.data.suspended
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt'])
+
         || isSuperadmin()
           && uid != request.auth.uid
           && resource.data.email != 'admin@lawal.org'
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == resource.data.email
           && request.resource.data.role in ['member', 'pro', 'admin']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role', 'suspended', 'accountStatus', 'plan', 'updatedAt'
+          ])
+
         || isAdmin()
           && !isSuperadmin()
           && uid != request.auth.uid
           && resource.data.role in ['member', 'pro']
           && request.resource.data.role in ['member', 'pro']
           && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email;
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role', 'suspended', 'accountStatus', 'updatedAt'
+          ]);
+
       allow delete: if isSuperadmin()
         && uid != request.auth.uid
         && resource.data.email != 'admin@lawal.org'
