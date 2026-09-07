@@ -1,46 +1,42 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    function isSuperadmin() {
-      return signedIn() && request.auth.token.email == 'admin@lawal.org';
-    }
-
-    function ownProfile() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function isAdmin() {
-      return isSuperadmin() || (signedIn() && ownProfile().data.role == 'admin');
-    }
+    function signedIn() { return request.auth != null; }
+    function isSuperadmin() { return signedIn() && request.auth.token.email == 'admin@lawal.org'; }
+    function ownProfile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return isSuperadmin() || (signedIn() && ownProfile().data.role == 'admin'); }
 
     match /users/{uid} {
       allow read: if signedIn() && (uid == request.auth.uid || isAdmin());
-
       allow create: if signedIn()
         && uid == request.auth.uid
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.suspended == false
-        && (request.resource.data.role == 'member'
-            || (isSuperadmin() && request.resource.data.role == 'superadmin'));
-
+        && (request.resource.data.role == 'member' || (isSuperadmin() && request.resource.data.role == 'superadmin'));
       allow update: if signedIn() && uid == request.auth.uid
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.role == resource.data.role
         && request.resource.data.suspended == resource.data.suspended
-        || isSuperadmin() && uid != request.auth.uid && uid != resource.data.uid == false
-        || isAdmin() && uid != request.auth.uid
+        || isSuperadmin()
+          && uid != request.auth.uid
+          && resource.data.email != 'admin@lawal.org'
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.role in ['member', 'pro', 'admin']
+        || isAdmin()
+          && !isSuperadmin()
+          && uid != request.auth.uid
           && resource.data.role in ['member', 'pro']
           && request.resource.data.role in ['member', 'pro']
-          && request.resource.data.email == resource.data.email
-          && request.resource.data.uid == resource.data.uid;
-
-      allow delete: if isAdmin()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email;
+      allow delete: if isSuperadmin()
+        && uid != request.auth.uid
+        && resource.data.email != 'admin@lawal.org'
+        || isAdmin()
+        && !isSuperadmin()
         && uid != request.auth.uid
         && resource.data.role in ['member', 'pro'];
     }
