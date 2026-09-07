@@ -21,6 +21,7 @@
 .auth-submit:disabled,.google-button:disabled{opacity:.55;cursor:wait}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:25px 0 15px;color:#999;font-size:11px;text-transform:uppercase;letter-spacing:.12em}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--line);flex:1}
+.auth-create-divider{margin-bottom:12px}
 .auth-switch{display:block;width:100%;border:0;background:none;color:#687078;font:inherit;font-size:13px;cursor:pointer;text-align:center;margin:25px 0 0;padding:4px}
 .auth-switch strong{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-weight:600}
 .auth-switch:hover strong{color:var(--gold)}
