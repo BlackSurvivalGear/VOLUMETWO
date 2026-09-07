@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manage your Volume Two business profile.">
+  <meta name="theme-color" content="#101114"><title>Business Profile | Volume Two</title>
+  <link rel="icon" type="image/png" href="FAVI.png"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="business-profile.css">
+</head>
+<body class="dashboard-page profile-page">
+<header class="site-header" id="top"><a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a><nav class="desktop-nav" aria-label="Primary navigation"><a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a><a href="index.html">Public Site</a></nav><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation">Menu</button></header>
+<nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation"></nav>
+<main>
+  <section class="profile-hero section-pad"><div><p class="eyebrow">Volume Two / Business profile</p><h1>Your business<br><em>identity.</em></h1><p>Keep the business details that power your V2 tools in one place. These details belong to your business profile, not your personal account.</p></div><div class="profile-status-card"><span>PROFILE</span><strong id="profile-status">Loading…</strong><small id="profile-business-id">Preparing your business profile</small></div></section>
+  <section class="profile-section section-pad">
+    <div class="section-label">01 / Business details</div>
+    <div class="profile-layout">
+      <form id="business-profile-form" class="profile-form">
+        <div class="form-grid">
+          <label>Business name<input id="business-name" name="business-name" type="text" required autocomplete="organization" placeholder="Your business name"></label>
+          <label>Business type<input id="business-type" name="business-type" type="text" autocomplete="organization-title" placeholder="Agency, consultancy, studio…"></label>
+          <label>Business email<input id="business-email" name="business-email" type="email" autocomplete="email" placeholder="hello@business.com"></label>
+          <label>Business phone<input id="business-phone" name="business-phone" type="tel" autocomplete="tel" placeholder="+44 …"></label>
+          <label class="full-width">Website<input id="business-website" name="business-website" type="url" autocomplete="url" placeholder="https://example.com"></label>
+          <label class="full-width">Address<textarea id="business-address" name="business-address" rows="4" autocomplete="street-address" placeholder="Business address"></textarea></label>
+        </div>
+        <div class="profile-form-footer"><p id="profile-message" class="profile-message" role="status"></p><button class="profile-save" type="submit">Save business profile <span>↗</span></button></div>
+      </form>
+      <aside class="profile-aside"><p class="eyebrow">How this works</p><h2>One business profile.<br><em>Many V2 tools.</em></h2><p>Your business information can be reused by invoices, QR codes, planning tools and future V2 services without repeatedly entering the same details.</p><div class="profile-note"><strong>Private to your account.</strong><span>Your business profile is linked to your V2 account and protected by Firestore security rules.</span></div></aside>
+    </div>
+  </section>
+</main>
+<footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
+<script src="script.js"></script><script type="module" src="auth.js?v=5"></script><script type="module" src="business-profile.js?v=1"></script>
+</body></html>
