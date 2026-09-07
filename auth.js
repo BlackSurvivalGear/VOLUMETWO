@@ -19,6 +19,22 @@ if (isSignInPage) {
   const form = document.querySelector('#sign-in-form');
   const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
+  const signInView = document.querySelector('#sign-in-view');
+  const createAccountView = document.querySelector('#create-account-view');
+  const showCreateButton = document.querySelector('#show-create-account');
+  const showSignInButton = document.querySelector('#show-sign-in');
+
+  const showView = (view) => {
+    const creating = view === 'create';
+    signInView?.toggleAttribute('hidden', creating);
+    createAccountView?.toggleAttribute('hidden', !creating);
+    document.querySelector('#auth-title').textContent = creating ? 'Create your account.' : 'Welcome back.';
+    setStatus('');
+    (creating ? document.querySelector('#new-email') : document.querySelector('#email'))?.focus();
+  };
+
+  showCreateButton?.addEventListener('click', () => showView('create'));
+  showSignInButton?.addEventListener('click', () => showView('sign-in'));
 
   onAuthStateChanged(auth, (user) => {
     if (user) routeAfterSignIn();
