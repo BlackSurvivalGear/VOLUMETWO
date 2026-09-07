@@ -10,20 +10,16 @@ const SUPERADMIN_EMAIL = 'admin@lawal.org';
 
 const normaliseEmail = (email) => String(email || '').trim().toLowerCase();
 
-const isDesignatedSuperadmin = (request) =>
-  normaliseEmail(request.auth?.token?.email) === SUPERADMIN_EMAIL;
-
-const getRole = (request) => request.auth?.token?.role || 'member';
-
 async function requireSignedIn(request) {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in.');
   }
 
-  // The designated superadmin is bootstrapped by verified Firebase Authentication
-  // identity. No client can set this claim themselves.
-  if (isDesignatedSuperadmin(request)) {
-    const user = await auth.getUser(request.auth.uid);
+  const user = await auth.getUser(request.auth.uid);
+
+  // The designated superadmin is bootstrapped by the verified Firebase
+  // Authentication identity. No client can set this claim themselves.
+  if (normaliseEmail(user.email) === SUPERADMIN_EMAIL) {
     if (user.customClaims?.role !== 'superadmin') {
       await auth.setCustomUserClaims(request.auth.uid, {
         ...(user.customClaims || {}),
@@ -33,7 +29,7 @@ async function requireSignedIn(request) {
     return 'superadmin';
   }
 
-  return getRole(request);
+  return user.customClaims?.role || 'member';
 }
 
 async function requireAdmin(request) {
@@ -112,6 +108,7 @@ exports.setUserDisabled = onCall({ region: REGION }, async (request) => {
   }
 
   await auth.updateUser(uid, { disabled });
+  if (disabled) await auth.revokeRefreshTokens(uid);
   return { success: true, disabled };
 });
 
@@ -141,8 +138,7 @@ exports.deleteUser = onCall({ region: REGION }, async (request) => {
 });
 
 exports.setUserRole = onCall({ region: REGION }, async (request) => {
-  await requireSignedIn(request);
-  const callerRole = await requireAdmin(request);
+  const callerRole = await requireSignedIn(request);
   if (callerRole !== 'superadmin') {
     throw new HttpsError('permission-denied', 'Only a superadmin can change user roles.');
   }
