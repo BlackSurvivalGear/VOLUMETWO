@@ -28,7 +28,8 @@ service cloud.firestore {
         && request.resource.data.suspended == resource.data.suspended
         && request.resource.data.plan == resource.data.get('plan', 'free')
         && request.resource.data.accountStatus == resource.data.get('accountStatus', resource.data.get('suspended', false) ? 'suspended' : 'active')
-        && request.resource.data.businessId == resource.data.get('businessId', null)
+        && (request.resource.data.businessId == resource.data.get('businessId', null)
+            || (resource.data.get('businessId', null) == null && request.resource.data.businessId == request.auth.uid))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'displayName', 'photoURL', 'phone', 'lastSignInAt', 'lastActiveAt', 'updatedAt',
           'plan', 'accountStatus', 'businessId'
@@ -70,6 +71,27 @@ service cloud.firestore {
         && !isSuperadmin()
         && uid != request.auth.uid
         && resource.data.role in ['member', 'pro'];
+    }
+
+    match /businesses/{businessId} {
+      allow read: if signedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+
+      allow create: if signedIn()
+        && businessId == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string;
+
+      allow update: if signedIn()
+        && businessId == request.auth.uid
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'type', 'email', 'phone', 'website', 'address', 'updatedAt'
+        ]);
+
+      allow delete: if signedIn()
+        && businessId == request.auth.uid
+        && resource.data.ownerUid == request.auth.uid;
     }
   }
 }
