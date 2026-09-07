@@ -37,6 +37,7 @@ if (isSignInPage) {
 
   showCreateButton?.addEventListener('click', () => showView('create'));
   showSignInButton?.addEventListener('click', () => showView('sign-in'));
+  if (new URLSearchParams(window.location.search).get('mode') === 'create') showView('create');
 
   onAuthStateChanged(auth, (user) => {
     if (user) routeAfterSignIn();
@@ -138,7 +139,7 @@ const renderSignedOutNavigation = () => {
   const desktopNav = document.querySelector('.desktop-nav');
   const mobileNav = document.querySelector('.mobile-nav');
   if (!desktopNav || !mobileNav) return;
-  const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a><a class="nav-create-account" href="auth.html?mode=create">Create Account</a>';
+  const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a><a class="nav-create-account" href="auth.html?mode=create">Create V2 Account</a>';
   desktopNav.innerHTML = publicHtml;
   mobileNav.innerHTML = publicHtml;
 };
