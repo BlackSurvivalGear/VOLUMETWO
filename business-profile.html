@@ -12,23 +12,32 @@
 <main>
   <section class="profile-hero section-pad"><div><p class="eyebrow">Volume Two / Business profile</p><h1>Your business<br><em>identity.</em></h1><p>Keep the business details that power your V2 tools in one place. These details belong to your business profile, not your personal account.</p></div><div class="profile-status-card"><span>PROFILE</span><strong id="profile-status">Loading…</strong><small id="profile-business-id">Preparing your business profile</small></div></section>
   <section class="profile-section section-pad">
-    <div class="section-label">01 / Business details</div>
+    <div class="section-label">01 / Business identity</div>
     <div class="profile-layout">
       <form id="business-profile-form" class="profile-form">
+        <div class="logo-row">
+          <div class="logo-preview-wrap"><div class="logo-preview" id="logo-preview"><span>V2</span></div></div>
+          <div class="logo-copy"><p class="field-eyebrow">Business logo</p><strong>Add your brand mark</strong><span>Use a square PNG, JPG or WebP. V2 will optimise it for your business tools.</span><label class="file-button">Upload logo<input id="business-logo" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="remove-logo" id="remove-logo" type="button" hidden>Remove logo</button></div>
+        </div>
         <div class="form-grid">
           <label>Business name<input id="business-name" name="business-name" type="text" required autocomplete="organization" placeholder="Your business name"></label>
           <label>Business type<input id="business-type" name="business-type" type="text" autocomplete="organization-title" placeholder="Agency, consultancy, studio…"></label>
           <label>Business email<input id="business-email" name="business-email" type="email" autocomplete="email" placeholder="hello@business.com"></label>
           <label>Business phone<input id="business-phone" name="business-phone" type="tel" autocomplete="tel" placeholder="+44 …"></label>
+          <label>Registration number<input id="business-registration" name="business-registration" type="text" placeholder="Company / registration number"></label>
+          <label>Tax / VAT number<input id="business-tax" name="business-tax" type="text" placeholder="Tax or VAT number"></label>
+          <label>Country<input id="business-country" name="business-country" type="text" autocomplete="country-name" placeholder="Nigeria, United Kingdom…"></label>
+          <label>City / State<input id="business-city" name="business-city" type="text" autocomplete="address-level2" placeholder="City / State / Region"></label>
           <label class="full-width">Website<input id="business-website" name="business-website" type="url" autocomplete="url" placeholder="https://example.com"></label>
           <label class="full-width">Address<textarea id="business-address" name="business-address" rows="4" autocomplete="street-address" placeholder="Business address"></textarea></label>
         </div>
+        <div class="owner-panel"><div><p class="field-eyebrow">Account owner</p><h3 id="owner-name">Loading…</h3><span id="owner-email">Loading owner email…</span></div><div><label>Owner role / title<input id="owner-title" name="owner-title" type="text" placeholder="Founder, Director, Owner…"></label></div></div>
         <div class="profile-form-footer"><p id="profile-message" class="profile-message" role="status"></p><button class="profile-save" type="submit">Save business profile <span>↗</span></button></div>
       </form>
-      <aside class="profile-aside"><p class="eyebrow">How this works</p><h2>One business profile.<br><em>Many V2 tools.</em></h2><p>Your business information can be reused by invoices, QR codes, planning tools and future V2 services without repeatedly entering the same details.</p><div class="profile-note"><strong>Private to your account.</strong><span>Your business profile is linked to your V2 account and protected by Firestore security rules.</span></div></aside>
+      <aside class="profile-aside"><p class="eyebrow">How this works</p><h2>One business profile.<br><em>Many V2 tools.</em></h2><p>Your business information can be reused by invoices, QR codes, planning tools and future V2 services without repeatedly entering the same details.</p><div class="profile-note"><strong>Private to your account.</strong><span>Your business profile is linked to your V2 account and protected by Firestore security rules.</span></div><div class="profile-note"><strong>Logo ready for V2 tools.</strong><span>The saved logo can be reused by the Invoice Generator, QR Code Generator and future branding tools.</span></div></aside>
     </div>
   </section>
 </main>
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
-<script src="script.js"></script><script type="module" src="auth.js?v=5"></script><script type="module" src="business-profile.js?v=1"></script>
+<script src="script.js"></script><script type="module" src="auth.js?v=5"></script><script type="module" src="business-profile.js?v=2"></script>
 </body></html>
