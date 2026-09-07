@@ -27,14 +27,17 @@
     <div>
       <p class="eyebrow">Volume Two / Dashboard</p>
       <h1>Your business<br><em>command centre.</em></h1>
-      <p>Welcome to the Volume Two dashboard. This is where signed-in users will access business tools, resources and other services available through V2.</p>
+      <p>Welcome to the Volume Two dashboard. This is your member area for business tools, resources and services available through V2.</p>
     </div>
     <div class="dashboard-badge" aria-hidden="true"><span>V2</span><small>MEMBER AREA</small></div>
   </section>
 
   <section class="dashboard-account section-pad">
     <div><span class="account-label">Signed in as</span><strong id="account-name">Loading…</strong><span id="account-email">Checking your account…</span></div>
-    <button id="sign-out" type="button">Sign Out <span>↗</span></button>
+    <div class="dashboard-account-actions">
+      <a class="admin-dashboard-button" data-admin-dashboard href="admin.html" hidden>Admin Dashboard <span>↗</span></a>
+      <button id="sign-out" type="button">Sign Out <span>↗</span></button>
+    </div>
   </section>
 
   <section class="dashboard-tools section-pad">
@@ -62,6 +65,6 @@
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
-<script type="module" src="auth.js?v=2"></script>
+<script type="module" src="auth.js?v=3"></script>
 </body>
 </html>

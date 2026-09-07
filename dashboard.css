@@ -7,13 +7,16 @@
 .dashboard-badge span{font-family:'Playfair Display',Georgia,serif;font-size:72px;line-height:1;color:var(--ink)}
 .dashboard-badge small{margin-top:14px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#777}
 .dashboard-account{display:flex;justify-content:space-between;align-items:center;gap:30px;border-bottom:1px solid var(--line);padding-top:28px;padding-bottom:28px}
-.dashboard-account>div{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.dashboard-account>div:first-child{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.dashboard-account-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
 .account-label{font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:#888}
 #account-name{font-size:14px;font-weight:500}
 #account-email{font-size:13px;color:#777}
-#sign-out{border:1px solid #c8c8c2;background:transparent;color:var(--ink);padding:11px 15px;font:inherit;font-size:11px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;white-space:nowrap}
-#sign-out:hover{border-color:var(--gold)}
+#sign-out,.admin-dashboard-button{border:1px solid #c8c8c2;background:transparent;color:var(--ink);padding:11px 15px;font:inherit;font-size:11px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;white-space:nowrap;text-decoration:none}
+#sign-out:hover,.admin-dashboard-button:hover{border-color:var(--gold)}
 #sign-out:disabled{opacity:.5;cursor:wait}
+.admin-dashboard-button{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.admin-dashboard-button:hover{background:#292a2d;color:var(--paper);border-color:#292a2d}
 .dashboard-tools{padding-top:105px}
 .dashboard-heading{display:flex;justify-content:space-between;align-items:end;gap:60px;margin-bottom:65px}
 .dashboard-heading h2{font-size:clamp(46px,5.5vw,76px);line-height:.98;letter-spacing:-.055em;margin:0;font-weight:600}
@@ -32,4 +35,4 @@
 .dashboard-message>div>p:last-child{max-width:600px;color:#aaa;margin:32px 0 0;font-size:17px}
 .dashboard-message .eyebrow{color:var(--gold-soft)}
 @media(max-width:800px){.dashboard-hero{grid-template-columns:1fr;padding:80px 6vw}.dashboard-badge{justify-self:start;width:180px;height:180px}.dashboard-badge span{font-size:58px}.dashboard-account{align-items:flex-start}.dashboard-heading{display:block}.dashboard-heading p{margin-top:25px}.tool-grid{grid-template-columns:1fr}.tool-card{min-height:240px}.dashboard-message{padding:85px 6vw}}
-@media(max-width:520px){.dashboard-hero h1{font-size:clamp(48px,14vw,70px)}.dashboard-hero>div:first-child>p:last-child{font-size:16px}.dashboard-account{display:block}.dashboard-account>div{display:block}.account-label,#account-name,#account-email{display:block;margin-bottom:7px}.tool-card{padding:28px}.tool-card h3{font-size:27px;margin-top:34px}.dashboard-message{padding:75px 7vw}}
+@media(max-width:520px){.dashboard-hero h1{font-size:clamp(48px,14vw,70px)}.dashboard-hero>div:first-child>p:last-child{font-size:16px}.dashboard-account{display:block}.dashboard-account>div:first-child{display:block}.dashboard-account-actions{justify-content:flex-start;margin-top:18px}.account-label,#account-name,#account-email{display:block;margin-bottom:7px}.tool-card{padding:28px}.tool-card h3{font-size:27px;margin-top:34px}.dashboard-message{padding:75px 7vw}}

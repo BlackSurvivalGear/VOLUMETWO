@@ -39,7 +39,7 @@ const renderSignedInNavigation = (role) => {
   const desktopNav = document.querySelector('.desktop-nav');
   const mobileNav = document.querySelector('.mobile-nav');
   const adminLink = role === 'admin' || role === 'superadmin'
-    ? '<a href="admin.html">Admin</a>'
+    ? '<a href="admin.html">Admin Dashboard</a>'
     : '';
   const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`;
 
@@ -115,9 +115,10 @@ const resolveRole = async (user) => {
   }
 };
 
-const routeAfterSignIn = async (user) => {
-  const role = await resolveRole(user);
-  window.location.replace(role === 'admin' || role === 'superadmin' ? 'admin.html' : 'dashboard.html');
+const routeAfterSignIn = () => {
+  // Every successful sign-in lands in the member dashboard first. Admins and
+  // superadmins get a separate Admin Dashboard button there.
+  window.location.replace('dashboard.html');
 };
 
 if (isSignInPage) {
@@ -125,7 +126,7 @@ if (isSignInPage) {
   const googleButton = document.querySelector('#google-sign-in');
 
   onAuthStateChanged(auth, async (user) => {
-    if (user) await routeAfterSignIn(user);
+    if (user) routeAfterSignIn();
   });
 
   form?.addEventListener('submit', async (event) => {
@@ -139,7 +140,7 @@ if (isSignInPage) {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      await routeAfterSignIn(credential.user);
+      routeAfterSignIn(credential.user);
     } catch (error) {
       const messages = {
         'auth/invalid-credential': 'The email or password is incorrect.',
@@ -157,7 +158,7 @@ if (isSignInPage) {
     setStatus('Opening Google sign-in…');
     try {
       const credential = await signInWithPopup(auth, googleProvider);
-      await routeAfterSignIn(credential.user);
+      routeAfterSignIn(credential.user);
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') {
         setStatus('Google sign-in was not completed. Please try again.', 'error');
@@ -183,6 +184,11 @@ onAuthStateChanged(auth, async (user) => {
   const accountName = document.querySelector('#account-name, #member-name');
   if (accountEmail) accountEmail.textContent = user.email || 'Signed-in user';
   if (accountName) accountName.textContent = user.displayName || 'V2 Member';
+
+  const adminDashboardLink = document.querySelector('[data-admin-dashboard]');
+  if (adminDashboardLink) {
+    adminDashboardLink.hidden = role !== 'admin' && role !== 'superadmin';
+  }
 
   if (isAdminPage && role !== 'admin' && role !== 'superadmin') {
     window.location.replace('dashboard.html');
