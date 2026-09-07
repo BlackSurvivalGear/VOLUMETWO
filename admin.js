@@ -58,8 +58,8 @@ const renderUsers = (users) => {
     const isSelf = auth.currentUser?.uid === user.uid;
     const isSuperadmin = user.role === 'superadmin';
     const canChangeRole = currentRole === 'superadmin' && !isSelf && !isSuperadmin;
-    const canChangeStatus = !isSelf && !(currentRole === 'admin' && isSuperadmin);
-    const canDelete = !isSelf && !(currentRole === 'admin' && isSuperadmin);
+    const canChangeStatus = !isSelf;
+    const canDelete = !isSelf;
     const displayName = user.displayName || 'Unnamed user';
     const statusClass = user.disabled ? 'suspended' : 'active';
     const statusLabel = user.disabled ? 'Suspended' : 'Active';
@@ -79,7 +79,7 @@ const renderUsers = (users) => {
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
       <td>${escapeHtml(formatDate(user.createdAt))}</td>
       <td>${escapeHtml(formatDate(user.lastSignInAt))}</td>
-      <td><div class="admin-actions">${roleControl}${statusControl}${deleteControl || '<span class="user-email">Protected</span>'}</div></td>
+      <td><div class="admin-actions">${roleControl}${statusControl}${deleteControl || '<span class="user-email">Current account</span>'}</div></td>
     </tr>`;
   }).join('');
 };
