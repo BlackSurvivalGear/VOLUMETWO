@@ -79,14 +79,19 @@ service cloud.firestore {
       allow create: if signedIn()
         && businessId == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.name is string;
+        && request.resource.data.name is string
+        && request.resource.data.get('logoDataUrl', '') is string
+        && request.resource.data.get('logoDataUrl', '').size() <= 320000;
 
       allow update: if signedIn()
         && businessId == request.auth.uid
         && resource.data.ownerUid == request.auth.uid
         && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.get('logoDataUrl', '') is string
+        && request.resource.data.get('logoDataUrl', '').size() <= 320000
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'type', 'email', 'phone', 'website', 'address', 'updatedAt'
+          'name', 'type', 'email', 'phone', 'registrationNumber', 'taxNumber',
+          'country', 'city', 'website', 'address', 'ownerTitle', 'logoDataUrl', 'updatedAt'
         ]);
 
       allow delete: if signedIn()
