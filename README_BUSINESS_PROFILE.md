@@ -1,1 +1,0 @@
-Business profile implementation is documented in BUSINESS_PROFILE_SCHEMA.md.
