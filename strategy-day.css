@@ -1,0 +1,2 @@
+/* Strategy Day page stylesheet */
+.sd-hero{min-height:calc(100vh - 82px);max-width:var(--max);margin:auto;padding:7vw 4vw 6vw;display:grid;grid-template-columns:1fr .9fr;gap:7vw;align-items:center;position:relative;overflow:hidden}
