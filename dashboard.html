@@ -1,45 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="The Volume Two dashboard — business tools and resources for signed-in users.">
-  <meta name="theme-color" content="#101114">
-  <title>Dashboard | Volume Two</title>
-  <link rel="icon" type="image/png" href="FAVI.png">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="dashboard.css">
+  <meta name="theme-color" content="#101114"><title>Dashboard | Volume Two</title>
+  <link rel="icon" type="image/png" href="FAVI.png"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="dashboard-page">
-<header class="site-header" id="top">
-  <a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a>
-  <nav class="desktop-nav" aria-label="Primary navigation">
-    <a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a>
-  </nav>
-  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation">Menu</button>
-</header>
-<nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-  <a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a>
-</nav>
+<header class="site-header" id="top"><a class="brand" href="index.html" aria-label="Volume Two home"><span class="brand-mark">V<span>2</span></span><span class="brand-name">VOLUME TWO</span></a><nav class="desktop-nav" aria-label="Primary navigation"><a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a></nav><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation">Menu</button></header>
+<nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation"><a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a></nav>
 <main>
-  <section class="dashboard-hero">
-    <div><p class="eyebrow">Volume Two / Dashboard</p><h1>Your business<br><em>command centre.</em></h1><p>Welcome to the Volume Two dashboard. This is where signed-in users will access business tools, resources and other services available through V2.</p></div>
-    <div class="dashboard-badge" aria-hidden="true"><span>V2</span><small>MEMBER AREA</small></div>
-  </section>
-  <section class="dashboard-account section-pad"><div><span class="account-label">Signed in as</span><strong id="account-name">Loading…</strong><span id="account-email">Checking your account…</span></div><button id="sign-out" type="button">Sign Out <span>↗</span></button></section>
-  <section class="dashboard-tools section-pad">
-    <div class="section-label">01 / Business tools</div>
-    <div class="dashboard-heading"><h2>Tools built to<br><em>move business forward.</em></h2><p>The dashboard is the private working area for Volume Two clients and members.</p></div>
-    <div class="tool-grid">
-      <article class="tool-card"><span>01</span><h3>Business Strategy</h3><p>Structured tools for planning, priorities, opportunities and strategic decision-making.</p><strong>Coming next</strong></article>
-      <article class="tool-card"><span>02</span><h3>Growth Planner</h3><p>Work through growth priorities, routes to market, sales activity and commercial opportunities.</p><strong>Coming next</strong></article>
-      <a class="tool-card tool-link" href="business-tools.html"><span>03</span><h3>Brand Toolkit</h3><p>Resources and practical tools to help keep brand positioning, identity and communications aligned.</p><strong>Open Business Tools ↗</strong></a>
-      <article class="tool-card"><span>04</span><h3>Marketing Planner</h3><p>Plan campaigns, content and activity around clear marketing and commercial objectives.</p><strong>Coming next</strong></article>
-    </div>
-  </section>
-  <section class="dashboard-message"><div><p class="eyebrow">The V2 member experience</p><h2>One place for<br><em>better decisions.</em></h2><p>As the platform develops, the dashboard can become the gateway to practical business tools, saved work, resources and services available to signed-in users.</p></div></section>
-</main>
-<footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
-<script src="script.js"></script><script type="module" src="auth.js"></script>
-</body>
-</html>
+<section class="dashboard-hero"><div><p class="eyebrow">Volume Two / Dashboard</p><h1>Your business<br><em>command centre.</em></h1><p>Welcome to the Volume Two dashboard. This is where signed-in users will access business tools, resources and other services available through V2.</p></div><div class="dashboard-badge"><span data-auth-role>Member</span><small>ACCESS LEVEL</small></div></section>
+<section class="dashboard-account section-pad"><div><span class="account-label">Signed in as</span><strong id="account-name">Loading…</strong><span id="account-email">Checking your account…</span></div><div class="dashboard-account-actions"><a class="admin-dashboard-button" data-admin-dashboard href="admin.html" hidden>Admin Dashboard <span>↗</span></a><button id="sign-out" type="button">Sign Out <span>↗</span></button></div></section>
+<section class="dashboard-tools section-pad"><div class="section-label">01 / Business tools</div><div class="dashboard-heading"><h2>Tools built to<br><em>move business forward.</em></h2><p>The dashboard is the private working area for Volume Two clients and members.</p></div><div class="tool-grid"><article class="tool-card"><span>01</span><h3>Business Strategy</h3><p>Structured tools for planning, priorities, opportunities and strategic decision-making.</p><strong>Coming next</strong></article><article class="tool-card"><span>02</span><h3>Growth Planner</h3><p>Work through growth priorities, routes to market, sales activity and commercial opportunities.</p><strong>Coming next</strong></article><a class="tool-card tool-link" href="business-tools.html"><span>03</span><h3>Brand Toolkit</h3><p>Resources and practical tools to help keep brand positioning, identity and communications aligned.</p><strong>Open Business Tools ↗</strong></a><article class="tool-card"><span>04</span><h3>Marketing Planner</h3><p>Plan campaigns, content and activity around clear marketing and commercial objectives.</p><strong>Coming next</strong></article></div></section>
+<section class="dashboard-message"><div><p class="eyebrow">The V2 member experience</p><h2>One place for<br><em>better decisions.</em></h2><p>As the platform develops, the dashboard can become the gateway to practical business tools, saved work, resources and services available to signed-in users.</p></div></section>
+</main><footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
+<script src="script.js"></script><script type="module" src="auth.js?v=7"></script>
+</body></html>
