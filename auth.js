@@ -7,7 +7,7 @@ const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const isSignInPage = window.location.pathname.endsWith('/auth.html');
-const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html');
+const isMemberPage = window.location.pathname.endsWith('/dashboard.html') || window.location.pathname.endsWith('/business-tools.html') || window.location.pathname.endsWith('/business-profile.html');
 const isAdminPage = window.location.pathname.endsWith('/admin.html');
 const ROLE_LABELS = { member: 'Member', pro: 'Pro', admin: 'Admin', superadmin: 'Superadmin' };
 const PLAN_LABELS = { free: 'Free', pro: 'Pro' };
@@ -105,7 +105,7 @@ if (isSignInPage) {
   googleCreateButton?.addEventListener('click', () => signInWithGoogle(googleCreateButton, true));
 }
 
-const renderSignedInNavigation = (role) => { const desktopNav = document.querySelector('.desktop-nav'); const mobileNav = document.querySelector('.mobile-nav'); const adminLink = ['admin', 'superadmin'].includes(role) ? '<a href="admin.html">Admin Dashboard</a>' : ''; const html = `<a href="dashboard.html">Dashboard</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`; [desktopNav, mobileNav].forEach((nav) => { if (!nav) return; nav.innerHTML = html; nav.querySelector('.nav-sign-out')?.addEventListener('click', async () => { await signOut(auth); window.location.replace('index.html'); }); }); };
+const renderSignedInNavigation = (role) => { const desktopNav = document.querySelector('.desktop-nav'); const mobileNav = document.querySelector('.mobile-nav'); const adminLink = ['admin', 'superadmin'].includes(role) ? '<a href="admin.html">Admin Dashboard</a>' : ''; const html = `<a href="dashboard.html">Dashboard</a><a href="business-profile.html">Business Profile</a><a href="business-tools.html">Business Tools</a>${adminLink}<a href="index.html">Public Site</a><button class="nav-sign-out" type="button">Sign Out</button>`; [desktopNav, mobileNav].forEach((nav) => { if (!nav) return; nav.innerHTML = html; nav.querySelector('.nav-sign-out')?.addEventListener('click', async () => { await signOut(auth); window.location.replace('index.html'); }); }); };
 const renderSignedOutNavigation = () => { const desktopNav = document.querySelector('.desktop-nav'); const mobileNav = document.querySelector('.mobile-nav'); if (!desktopNav || !mobileNav) return; const publicHtml = '<a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="strategy-day.html">Strategy Day</a><a href="workshops.html">Workshops</a><a href="index.html#contact">Contact</a><a href="auth.html">Sign In</a><a class="nav-create-account" href="auth.html?mode=create">Create V2 Account</a>'; desktopNav.innerHTML = publicHtml; mobileNav.innerHTML = publicHtml; };
 
 onAuthStateChanged(auth, async (user) => {
