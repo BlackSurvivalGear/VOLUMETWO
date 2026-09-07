@@ -1,3 +1,11 @@
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { app } from "./firebase-config.js";
+
+const auth = getAuth(app);
+const logoKey = (uid) => `v2_business_logo_${uid}`;
+let currentUid = '';
+let businessLogo = '';
+
 const invoiceForm = document.querySelector('#invoice-form');
 const lineItems = document.querySelector('#line-items');
 const addItemButton = document.querySelector('#add-item');
@@ -15,8 +23,78 @@ const formatDate = (value) => {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 };
 
-let itemCount = 0;
+const setLogoStatus = (message) => {
+  document.querySelectorAll('.logo-status').forEach((element) => { element.textContent = message; });
+  document.querySelectorAll('.clear-logo').forEach((button) => { button.hidden = !businessLogo; });
+};
 
+const renderLogo = () => {
+  const previewLogo = document.querySelector('#preview-logo');
+  if (previewLogo) {
+    previewLogo.hidden = !businessLogo;
+    previewLogo.src = businessLogo || '';
+  }
+  setLogoStatus(businessLogo ? 'Logo saved for this member account and shared across both tools.' : 'No logo uploaded.');
+};
+
+const saveLogo = (dataUrl) => {
+  businessLogo = dataUrl;
+  if (currentUid) localStorage.setItem(logoKey(currentUid), dataUrl);
+  renderLogo();
+  if (getValue('qr-content')) makeQrCode();
+};
+
+const resizeLogo = (file) => new Promise((resolve, reject) => {
+  if (!file.type.startsWith('image/')) return reject(new Error('Please select an image file.'));
+  if (file.size > 2 * 1024 * 1024) return reject(new Error('Please choose a logo smaller than 2MB.'));
+  const reader = new FileReader();
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, 600 / image.width, 300 / image.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    image.onerror = () => reject(new Error('The selected image could not be read.'));
+    image.src = reader.result;
+  };
+  reader.onerror = () => reject(new Error('The selected image could not be read.'));
+  reader.readAsDataURL(file);
+});
+
+const handleLogoUpload = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    saveLogo(await resizeLogo(file));
+  } catch (error) {
+    setLogoStatus(error.message);
+  } finally {
+    event.target.value = '';
+  }
+};
+
+document.querySelectorAll('#invoice-logo, #qr-logo').forEach((input) => input.addEventListener('change', handleLogoUpload));
+document.querySelectorAll('#invoice-logo-clear, #qr-logo-clear').forEach((button) => button.addEventListener('click', () => {
+  businessLogo = '';
+  if (currentUid) localStorage.removeItem(logoKey(currentUid));
+  renderLogo();
+  if (getValue('qr-content')) makeQrCode();
+}));
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) return;
+  currentUid = user.uid;
+  businessLogo = localStorage.getItem(logoKey(currentUid)) || '';
+  renderLogo();
+});
+
+let itemCount = 0;
 const addLineItem = (description = '', quantity = 1, rate = '') => {
   itemCount += 1;
   const row = document.createElement('div');
@@ -62,7 +140,6 @@ function updateInvoicePreview() {
   const tbody = document.querySelector('#preview-items');
   tbody.replaceChildren();
   let subtotal = 0;
-
   items.forEach((item) => {
     subtotal += item.amount;
     item.row.querySelector('.line-amount').textContent = formatMoney(item.amount);
@@ -74,7 +151,6 @@ function updateInvoicePreview() {
     });
     tbody.appendChild(tr);
   });
-
   const taxRate = Number.parseFloat(getValue('tax-rate', '0')) || 0;
   const tax = subtotal * (taxRate / 100);
   document.querySelector('#preview-subtotal').textContent = formatMoney(subtotal);
@@ -94,53 +170,89 @@ if (invoiceForm) {
   setToday();
   addLineItem('', 1, '');
   invoiceForm.querySelectorAll('input, textarea, select').forEach((input) => input.addEventListener('input', updateInvoicePreview));
-  invoiceForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    updateInvoicePreview();
-  });
+  invoiceForm.addEventListener('submit', (event) => { event.preventDefault(); updateInvoicePreview(); });
   addItemButton?.addEventListener('click', () => addLineItem('', 1, ''));
-  printInvoiceButton?.addEventListener('click', () => {
-    updateInvoicePreview();
-    window.print();
-  });
+  printInvoiceButton?.addEventListener('click', () => { updateInvoicePreview(); window.print(); });
 }
 
-const makeQrCode = () => {
+const waitForQrCanvas = () => new Promise((resolve) => {
+  const started = performance.now();
+  const check = () => {
+    const canvas = qrPreview?.querySelector('canvas');
+    const image = qrPreview?.querySelector('img');
+    if (canvas || image || performance.now() - started > 1000) resolve({ canvas, image });
+    else requestAnimationFrame(check);
+  };
+  check();
+});
+
+const makeQrCode = async () => {
   if (!qrPreview || typeof QRCode === 'undefined') return;
   const content = getValue('qr-content');
   if (!content) return;
   const size = Number.parseInt(document.querySelector('#qr-size')?.value || '240', 10);
   qrPreview.replaceChildren();
-  new QRCode(qrPreview, {
-    text: content,
-    width: size,
-    height: size,
-    correctLevel: QRCode.CorrectLevel.M
-  });
-  qrEmpty.hidden = true;
+  new QRCode(qrPreview, { text: content, width: size, height: size, correctLevel: QRCode.CorrectLevel.H });
+  const source = await waitForQrCanvas();
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = size;
+  sourceCanvas.height = size;
+  const context = sourceCanvas.getContext('2d');
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, size, size);
+  if (source.canvas) context.drawImage(source.canvas, 0, 0, size, size);
+  else if (source.image) context.drawImage(source.image, 0, 0, size, size);
 
-  const qrImage = qrPreview.querySelector('img');
-  const qrCanvas = qrPreview.querySelector('canvas');
-  const updateDownload = () => {
-    let dataUrl = '';
-    if (qrImage?.src?.startsWith('data:image')) dataUrl = qrImage.src;
-    else if (qrCanvas) dataUrl = qrCanvas.toDataURL('image/png');
-    if (dataUrl) {
-      qrDownload.href = dataUrl;
-      qrDownload.setAttribute('aria-disabled', 'false');
+  if (businessLogo) {
+    const logo = new Image();
+    await new Promise((resolve) => { logo.onload = resolve; logo.onerror = resolve; logo.src = businessLogo; });
+    if (logo.complete && logo.naturalWidth) {
+      const logoSize = Math.round(size * 0.22);
+      const pad = Math.round(size * 0.035);
+      const boxSize = logoSize + pad * 2;
+      const x = Math.round((size - boxSize) / 2);
+      const y = x;
+      context.fillStyle = '#fff';
+      context.fillRect(x, y, boxSize, boxSize);
+      const scale = Math.min(logoSize / logo.naturalWidth, logoSize / logo.naturalHeight);
+      const width = logo.naturalWidth * scale;
+      const height = logo.naturalHeight * scale;
+      context.drawImage(logo, x + (boxSize - width) / 2, y + (boxSize - height) / 2, width, height);
     }
-  };
-  if (qrImage) {
-    qrImage.addEventListener('load', updateDownload, { once: true });
-    updateDownload();
-  } else {
-    updateDownload();
   }
+
+  qrPreview.replaceChildren(sourceCanvas);
+  qrEmpty.hidden = true;
+  qrDownload.href = sourceCanvas.toDataURL('image/png');
+  qrDownload.setAttribute('aria-disabled', 'false');
 };
 
-qrForm?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  makeQrCode();
+qrForm?.addEventListener('submit', (event) => { event.preventDefault(); makeQrCode(); });
+document.querySelector('#qr-size')?.addEventListener('change', makeQrCode);
+
+document.querySelectorAll('[data-tool]').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tool;
+    document.querySelectorAll('.tool-tab').forEach((button) => {
+      const active = button === tab;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    document.querySelectorAll('.tool-panel').forEach((panel) => {
+      const active = panel.id === `panel-${target}`;
+      panel.hidden = !active;
+      panel.classList.toggle('active', active);
+    });
+    if (target === 'qr' && getValue('qr-content')) makeQrCode();
+  });
 });
 
-document.querySelector('#qr-size')?.addEventListener('change', makeQrCode);
+document.querySelectorAll('.tool-tab').forEach((tab) => tab.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+  event.preventDefault();
+  const tabs = [...document.querySelectorAll('.tool-tab')];
+  const index = tabs.indexOf(tab);
+  const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
+  tabs[next].focus();
+  tabs[next].click();
+}));
