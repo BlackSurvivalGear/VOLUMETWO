@@ -37,7 +37,7 @@ const addSignInLink = (nav) => {
   if (!nav || nav.querySelector('.sign-in-link')) return;
   const link = document.createElement('a');
   link.className = 'sign-in-link';
-  link.href = 'dashboard.html';
+  link.href = isDashboard ? 'dashboard.html' : 'auth.html';
   link.textContent = isDashboard ? 'Dashboard' : 'Sign In';
   if (isDashboard) link.setAttribute('aria-current', 'page');
   nav.appendChild(link);
