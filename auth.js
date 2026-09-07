@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -9,6 +9,12 @@ const isSignInPage = path.endsWith('/auth.html');
 const isAdminPage = path.endsWith('/admin.html');
 const isMemberPage = path.endsWith('/dashboard.html') || path.endsWith('/business-tools.html') || isAdminPage;
 const SUPERADMIN_EMAIL = 'admin@lawal.org';
+const ROLE_LABELS = {
+  member: 'Member',
+  pro: 'Pro',
+  admin: 'Admin',
+  superadmin: 'Superadmin'
+};
 
 const setStatus = (message, type = '') => {
   const status = document.querySelector('#auth-status');
@@ -25,7 +31,7 @@ const injectPrivateNavStyles = () => {
   document.head.appendChild(style);
 };
 
-const roleLabel = (role) => role === 'superadmin' ? 'Superadmin' : role === 'admin' ? 'Admin' : 'Member';
+const roleLabel = (role) => ROLE_LABELS[role] || 'Member';
 
 const closeMobileNav = () => {
   const mobileNav = document.querySelector('.mobile-nav');
@@ -86,22 +92,6 @@ const renderSignedOutNavigation = () => {
 };
 
 const resolveRole = async (user) => {
-  // The designated superadmin identity is a safe UI fallback when the
-  // callable backend is temporarily unavailable. Server-side enforcement
-  // remains authoritative for every administrative action.
-  if (String(user.email || '').trim().toLowerCase() === SUPERADMIN_EMAIL) {
-    try {
-      const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js");
-      const functions = getFunctions(app, 'europe-west1');
-      const getMyRole = httpsCallable(functions, 'getMyRole');
-      const result = await getMyRole();
-      await user.getIdToken(true);
-      return result.data?.role || 'superadmin';
-    } catch {
-      return 'superadmin';
-    }
-  }
-
   try {
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-functions.js");
     const functions = getFunctions(app, 'europe-west1');
@@ -110,19 +100,21 @@ const resolveRole = async (user) => {
     await user.getIdToken(true);
     return result.data?.role || 'member';
   } catch {
+    if (String(user.email || '').trim().toLowerCase() === SUPERADMIN_EMAIL) return 'superadmin';
     const token = await user.getIdTokenResult();
-    return token.claims.role || 'member';
+    return ROLE_LABELS[token.claims.role] ? token.claims.role : 'member';
   }
 };
 
 const routeAfterSignIn = () => {
-  // Every successful sign-in lands in the member dashboard first. Admins and
-  // superadmins get a separate Admin Dashboard button there.
+  // All roles enter through the member dashboard. Elevated roles receive
+  // their additional controls after the role has been resolved there.
   window.location.replace('dashboard.html');
 };
 
 if (isSignInPage) {
   const form = document.querySelector('#sign-in-form');
+  const createForm = document.querySelector('#create-account-form');
   const googleButton = document.querySelector('#google-sign-in');
 
   onAuthStateChanged(auth, async (user) => {
@@ -139,8 +131,8 @@ if (isSignInPage) {
     setStatus('Signing you in…');
 
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      routeAfterSignIn(credential.user);
+      await signInWithEmailAndPassword(auth, email, password);
+      routeAfterSignIn();
     } catch (error) {
       const messages = {
         'auth/invalid-credential': 'The email or password is incorrect.',
@@ -153,12 +145,41 @@ if (isSignInPage) {
     }
   });
 
+  createForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const email = document.querySelector('#new-email').value.trim();
+    const password = document.querySelector('#new-password').value;
+    const confirmPassword = document.querySelector('#new-password-confirm').value;
+    const submitButton = createForm.querySelector('button[type="submit"]');
+
+    if (password !== confirmPassword) {
+      setStatus('The passwords do not match.', 'error');
+      return;
+    }
+
+    submitButton.disabled = true;
+    setStatus('Creating your member account…');
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      routeAfterSignIn();
+    } catch (error) {
+      const messages = {
+        'auth/email-already-in-use': 'An account with this email already exists. Please sign in instead.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/weak-password': 'Please choose a stronger password.'
+      };
+      setStatus(messages[error.code] || 'Unable to create the account. Please try again.', 'error');
+      submitButton.disabled = false;
+    }
+  });
+
   googleButton?.addEventListener('click', async () => {
     googleButton.disabled = true;
     setStatus('Opening Google sign-in…');
     try {
-      const credential = await signInWithPopup(auth, googleProvider);
-      routeAfterSignIn(credential.user);
+      await signInWithPopup(auth, googleProvider);
+      routeAfterSignIn();
     } catch (error) {
       if (error.code !== 'auth/popup-closed-by-user') {
         setStatus('Google sign-in was not completed. Please try again.', 'error');
