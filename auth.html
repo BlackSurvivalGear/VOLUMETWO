@@ -8,15 +8,7 @@
   <title>Sign In | Volume Two</title>
   <link rel="icon" type="image/png" href="FAVI.png">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="auth.css">
-  <style>
-    .auth-create-heading{margin-top:28px;padding-top:24px;border-top:1px solid rgba(16,17,20,.16)}
-    .auth-create-heading span{display:block;margin-bottom:8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#b58a4b}
-    .auth-create-heading h3{margin:0;font-size:22px;font-weight:500}
-    .auth-create-form{margin-top:18px}
-    .auth-create-note{margin:14px 0 0;font-size:12px;line-height:1.6;color:#687078}
-    .auth-status.error{color:#9d3f3f}
-  </style>
+  <link rel="stylesheet" href="auth.css?v=2">
 </head>
 <body class="auth-page">
 <header class="site-header">
@@ -28,55 +20,59 @@
   <section class="auth-panel" aria-labelledby="auth-title">
     <div class="auth-copy">
       <p class="eyebrow">Volume Two / Member access</p>
-      <h1>Sign in to your<br><em>business dashboard.</em></h1>
-      <p>Access the private V2 workspace where business tools, resources and member services will live.</p>
+      <h1>Build your<br><em>next move.</em></h1>
+      <p>Your private V2 workspace for practical business tools, resources and services.</p>
     </div>
 
     <div class="auth-card">
       <div class="auth-card-heading">
-        <span>V2 / 01</span>
-        <h2 id="auth-title">Welcome back.</h2>
+        <span id="auth-kicker">V2 / 01</span>
+        <h2 id="auth-title">Sign in to V2.</h2>
       </div>
 
-      <form id="sign-in-form" novalidate>
-        <label for="email">Email address</label>
-        <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
+      <div id="sign-in-view">
+        <form id="sign-in-form" novalidate>
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
 
-        <button class="auth-submit" type="submit">Sign In <span>↗</span></button>
-      </form>
+          <button class="auth-submit" type="submit">Sign In <span>↗</span></button>
+        </form>
 
-      <div class="auth-divider"><span>or</span></div>
-      <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
+        <div class="auth-divider"><span>or</span></div>
+        <button class="google-button" id="google-sign-in" type="button">Continue with Google</button>
 
-      <div class="auth-create-heading">
-        <span>New to Volume Two?</span>
-        <h3>Create your member account.</h3>
+        <button class="auth-switch" id="show-create-account" type="button">New to Volume Two? <strong>Create account</strong></button>
       </div>
-      <form id="create-account-form" class="auth-create-form" novalidate>
-        <label for="new-email">Email address</label>
-        <input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
 
-        <label for="new-password">Create password</label>
-        <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
+      <div id="create-account-view" hidden>
+        <p class="auth-view-intro">Create your personal V2 account and get immediate access to the member dashboard.</p>
+        <form id="create-account-form" novalidate>
+          <label for="new-email">Email address</label>
+          <input id="new-email" name="new-email" type="email" autocomplete="email" required placeholder="you@company.com">
 
-        <label for="new-password-confirm">Confirm password</label>
-        <input id="new-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat your password">
+          <label for="new-password">Password</label>
+          <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
 
-        <button class="auth-submit" type="submit">Create Member Account <span>↗</span></button>
-      </form>
-      <p class="auth-create-note">New accounts start as <strong>Member</strong>. Member access includes the dashboard and available Business Tools.</p>
+          <label for="new-password-confirm">Confirm password</label>
+          <input id="new-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat your password">
+
+          <button class="auth-submit" type="submit">Create Account <span>↗</span></button>
+        </form>
+        <p class="auth-member-note">New accounts are created as <strong>Member</strong> and open the member dashboard after registration.</p>
+        <button class="auth-switch auth-switch-back" id="show-sign-in" type="button">Already have an account? <strong>Sign in</strong></button>
+      </div>
 
       <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
-      <p class="auth-help">Need access to the V2 dashboard? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
+      <p class="auth-help">Need dashboard access? <a href="mailto:info@volumetwo.co.uk?subject=V2%20Dashboard%20Access">Contact Volume Two</a>.</p>
     </div>
   </section>
 </main>
 
 <footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Brand</div><div>© <span id="year"></span> Volume Two</div></footer>
 <script src="script.js"></script>
-<script type="module" src="auth.js"></script>
+<script type="module" src="auth.js?v=2"></script>
 </body>
 </html>
