@@ -12,8 +12,7 @@ const year=document.querySelector('#year');if(year)year.textContent=new Date().g
  const css=document.createElement('link');css.rel='stylesheet';css.href='discovery-assistant.css?v=2';document.head.appendChild(css);
  const STORAGE_KEY='v2DiscoveryAssistant';
  const FALLBACK_URL='https://volumetwo.co.uk/discovery-call-info/';
- // Replace this after deploying apps-script/Code.gs as a Google Apps Script Web App.
- const CALENDAR_API_URL='PASTE_APPS_SCRIPT_WEB_APP_URL_HERE';
+ const CALENDAR_API_URL='https://script.google.com/macros/s/AKfycbzE9dEcI1JIZLwNFkULE2qLwXlr72xs_PQ5nHRBi71mYHRQqvQDKaw9qsRLpTHaRlJe/exec';
  const calendarReady=()=>/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(CALENDAR_API_URL);
  const steps=[
   {key:'name',question:'Hi. I’m the Volume Two Discovery Assistant. I’ll ask a few quick questions, then help you book a discovery call.\n\nFirst, what’s your name?',type:'text',placeholder:'Your name'},
