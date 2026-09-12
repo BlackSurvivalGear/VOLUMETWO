@@ -11,7 +11,7 @@ const year=document.querySelector('#year');if(year)year.textContent=new Date().g
  if(document.querySelector('.v2-discovery-launcher'))return;
  const css=document.createElement('link');css.rel='stylesheet';css.href='discovery-assistant.css?v=3';document.head.appendChild(css);
  const STORAGE_KEY='v2DiscoveryAssistant';
- const CALENDAR_API_URL='https://script.google.com/macros/s/AKfycbzE9dEcI1JIZLwNFkULE2qLwXlr72xs_PQ5nHRBi71mYHRQqvQDKaw9qsRLpTHaRlJe/exec';
+ const CALENDAR_API_URL='https://script.google.com/macros/s/AKfycbywjKhNANdIfqVdWViq9WnF2o4UP7fIGWU-OqfSdm8mwg5mjkMDZ1mQaY_kEL36tt8rSA/exec';
  const calendarReady=()=>/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(CALENDAR_API_URL);
  const steps=[
   {key:'name',question:'Hi. I’m the Volume Two Discovery Assistant. I’ll ask a few quick questions, then help you book a discovery call.\n\nFirst, what’s your name?',type:'text',placeholder:'Your name'},
