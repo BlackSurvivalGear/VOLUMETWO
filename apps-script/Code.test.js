@@ -13,7 +13,7 @@ const checks = [
   ['server-controlled £95 GBP amount', code, /DISCOVERY_PRICE:\s*'95\.00'[\s\S]*DISCOVERY_PRICE_PENCE:\s*9500[\s\S]*CURRENCY:\s*'GBP'/],
   ['Stripe checkout session', code, /startStripeCheckout_[\s\S]*\/v1\/checkout\/sessions/],
   ['guest card checkout copy', frontend, /No Stripe account is required/],
-  ['payment required for booking', code, /verifyPayment_\(body\.paymentOrderId, body\.email\)/],
+  ['payment required for booking', code, /verifyPayment_\(body\.paymentOrderId,\s*body\.email\)/],
   ['Stripe paid status verification', code, /session\.payment_status !== 'paid'/],
   ['Stripe amount verification', code, /Number\(session\.amount_total\) !== CONFIG\.DISCOVERY_PRICE_PENCE/],
   ['Stripe currency verification', code, /String\(session\.currency \|\| ''\)\.toUpperCase\(\) !== CONFIG\.CURRENCY/],
@@ -25,6 +25,9 @@ const checks = [
   ['Stripe return route', code, /action === 'stripe-return'/],
   ['payment return contract', frontend, /payment'\)===['"]success['"][\s\S]*returned\.get\(['"]order['"]\)/],
   ['payment order sent to booking endpoint', frontend, /paymentOrderId:state\.paymentOrderId/],
+  ['Apps Script top-level navigation', code, /<base target=\"_top\">/],
+  ['secure continue link targets top frame', code, /target=\"_top\"[\s\S]*Continue securely/],
+  ['no automatic location.replace redirect', code, /location\.replace\(/, true],
   ['no PayPal API remains', code, /paypal/i, true]
 ];
 
