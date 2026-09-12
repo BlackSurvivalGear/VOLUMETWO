@@ -20,6 +20,8 @@ const checks = [
   ['payment email binding', code, /client_reference_id[\s\S]*booking email/],
   ['payment single use', code, /payment\.bookingId/],
   ['business hours enforcement', code, /Invalid booking window/],
+  ['GitHub Pages payment return URL', code, /SITE_URL:\s*'https:\/\/blacksurvivalgear\.github\.io\/VOLUMETWO\/'/],
+  ['old production return URL removed', code, /SITE_URL:\s*'https:\/\/volumetwo\.co\.uk\/'/, true],
   ['Volume Two Apps Script endpoint', frontend, /AKfycbywjKhNANdIfqVdWViq9WnF2o4UP7fIGWU-OqfSdm8mwg5mjkMDZ1mQaY_kEL36tt8rSA\/exec/],
   ['old Apps Script endpoint removed', frontend, /AKfycbzE9dEcI1JIZLwNFkULE2qLwXlr72xs_PQ5nHRBi71mYHRQqvQDKaw9qsRLpTHaRlJe\/exec/, true],
   ['checkout action', frontend, /action=pay&email=/],
