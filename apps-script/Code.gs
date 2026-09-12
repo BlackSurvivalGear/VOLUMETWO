@@ -2,7 +2,7 @@ const CONFIG = {
   CALENDAR_ID: 'primary', TIME_ZONE: 'Europe/London', SLOT_MINUTES: 30, DAYS_AHEAD: 21,
   BUSINESS_HOURS: { start: 9, end: 17 }, WEEKDAYS: [1,2,3,4,5],
   INTERNAL_EMAIL: 'info@volumetwo.co.uk', DISCOVERY_PRICE: '95.00', DISCOVERY_PRICE_PENCE: 9500,
-  CURRENCY: 'GBP', SITE_URL: 'https://volumetwo.co.uk/'
+  CURRENCY: 'GBP', SITE_URL: 'https://blacksurvivalgear.github.io/VOLUMETWO/'
 };
 
 function doGet(e) {
