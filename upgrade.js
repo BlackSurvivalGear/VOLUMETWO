@@ -5,8 +5,8 @@ const API='https://script.google.com/macros/s/AKfycbywjKhNANdIfqVdWViq9WnF2o4UP7
 const button=document.querySelector('#upgrade-pro'),status=document.querySelector('#upgrade-status');
 const params=new URLSearchParams(location.search);
 onAuthStateChanged(auth,(user)=>{
- if(!user)return;
+ if(!user){status.textContent='Please sign in before upgrading.';setTimeout(()=>location.replace('auth.html'),900);return;}
  button.disabled=false;status.textContent='Signed in as '+(user.email||'V2 member');
  button.onclick=()=>{button.disabled=true;status.textContent='Opening secure Stripe checkout…';location.href=`${API}?action=pro-pay&uid=${encodeURIComponent(user.uid)}&email=${encodeURIComponent(user.email||'')}`;};
- if(params.get('upgrade')==='success'){status.textContent='Payment received. Refreshing your Pro access…';setTimeout(()=>location.replace('business-tools.html'),1200);}
+ if(params.get('upgrade')==='cancelled')status.textContent='Payment cancelled. Your account has not been charged.';
 });
