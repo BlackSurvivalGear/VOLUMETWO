@@ -12,6 +12,8 @@ function doGet(e) {
     if (action === 'pay') return startStripeCheckout_(e.parameter || {});
     if (action === 'stripe-return') return finishStripeCheckout_(e.parameter || {});
     if (action === 'stripe-cancel') return redirectPage_(CONFIG.SITE_URL + '?payment=cancelled', 'Payment cancelled');
+    const proResponse = handleProAction_(action, e.parameter || {});
+    if (proResponse) return proResponse;
     throw new Error('Unsupported action');
   } catch (err) { return jsonResponse_({ok:false, error:err.message}); }
 }
