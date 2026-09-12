@@ -1,16 +1,5 @@
 const PRO_CONFIG = { PRICE_PENCE: 1999, CURRENCY: 'GBP', FIREBASE_PROJECT_ID: 'volumetwo-91bb0' };
 
-// Extend the existing discovery-call web app without changing its working routes.
-var volumeTwoDiscoveryDoGet_ = doGet;
-doGet = function(e) {
-  const action = (e && e.parameter && e.parameter.action) || 'availability';
-  if (action === 'pro-pay' || action === 'pro-return' || action === 'pro-cancel') {
-    try { return handleProAction_(action, e.parameter || {}); }
-    catch (err) { return jsonResponse_({ok:false,error:err.message}); }
-  }
-  return volumeTwoDiscoveryDoGet_(e);
-};
-
 function handleProAction_(action, params) {
   if (action === 'pro-pay') return startProCheckout_(params || {});
   if (action === 'pro-return') return finishProCheckout_(params || {});
