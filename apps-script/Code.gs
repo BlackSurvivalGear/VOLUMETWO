@@ -7,6 +7,7 @@ const CONFIG = {
   WEEKDAYS: [1, 2, 3, 4, 5],
   INTERNAL_EMAIL: 'info@volumetwo.co.uk',
   DISCOVERY_PRICE: '95.00',
+  DISCOVERY_PRICE_PENCE: 9500,
   CURRENCY: 'GBP',
   SITE_URL: 'https://volumetwo.co.uk/'
 };
@@ -15,9 +16,9 @@ function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || 'availability';
     if (action === 'availability') return jsonResponse_({ ok: true, slots: getAvailableSlots_() });
-    if (action === 'pay') return startPayPalCheckout_(e.parameter || {});
-    if (action === 'paypal-return') return finishPayPalCheckout_(e.parameter || {});
-    if (action === 'paypal-cancel') return redirectPage_(CONFIG.SITE_URL + '?payment=cancelled', 'Payment cancelled');
+    if (action === 'pay') return startStripeCheckout_(e.parameter || {});
+    if (action === 'stripe-return') return finishStripeCheckout_(e.parameter || {});
+    if (action === 'stripe-cancel') return redirectPage_(CONFIG.SITE_URL + '?payment=cancelled', 'Payment cancelled');
     throw new Error('Unsupported action');
   } catch (err) {
     return jsonResponse_({ ok: false, error: err.message });
@@ -39,100 +40,115 @@ function doPost(e) {
   }
 }
 
-function startPayPalCheckout_(params) {
+function startStripeCheckout_(params) {
   const email = clean_(params.email).toLowerCase();
   const name = clean_(params.name);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('A valid email is required before payment.');
+
   const webAppUrl = ScriptApp.getService().getUrl();
   if (!webAppUrl) throw new Error('Web app URL is unavailable.');
-  const order = paypalRequest_('/v2/checkout/orders', 'post', {
-    intent: 'CAPTURE',
-    purchase_units: [{
-      reference_id: 'V2-DISCOVERY',
-      description: 'Volume Two Discovery Call',
-      custom_id: email,
-      amount: { currency_code: CONFIG.CURRENCY, value: CONFIG.DISCOVERY_PRICE }
-    }],
-    application_context: {
-      brand_name: 'Volume Two',
-      shipping_preference: 'NO_SHIPPING',
-      user_action: 'PAY_NOW',
-      return_url: webAppUrl + '?action=paypal-return',
-      cancel_url: webAppUrl + '?action=paypal-cancel'
-    }
+
+  const session = stripeRequest_('/v1/checkout/sessions', 'post', {
+    mode: 'payment',
+    customer_email: email,
+    client_reference_id: email,
+    success_url: webAppUrl + '?action=stripe-return&session_id={CHECKOUT_SESSION_ID}',
+    cancel_url: webAppUrl + '?action=stripe-cancel',
+    'line_items[0][quantity]': '1',
+    'line_items[0][price_data][currency]': CONFIG.CURRENCY.toLowerCase(),
+    'line_items[0][price_data][unit_amount]': String(CONFIG.DISCOVERY_PRICE_PENCE),
+    'line_items[0][price_data][product_data][name]': 'Volume Two Discovery Call',
+    'line_items[0][price_data][product_data][description]': '30-minute Volume Two discovery call'
   });
-  if (!order.id) throw new Error('PayPal did not create an order.');
-  PropertiesService.getScriptProperties().setProperty('PAYPAL_ORDER_' + order.id, JSON.stringify({
-    email: email, name: name, status: 'CREATED', createdAt: Date.now()
+
+  if (!session.id || !session.url) throw new Error('Stripe did not create a checkout session.');
+
+  PropertiesService.getScriptProperties().setProperty('STRIPE_SESSION_' + session.id, JSON.stringify({
+    email: email,
+    name: name,
+    status: 'CREATED',
+    createdAt: Date.now()
   }));
-  const approve = (order.links || []).find(function(link) { return link.rel === 'approve' || link.rel === 'payer-action'; });
-  if (!approve || !approve.href) throw new Error('PayPal approval link was not returned.');
-  return redirectPage_(approve.href, 'Opening PayPal…');
+
+  return redirectPage_(session.url, 'Opening secure card payment');
 }
 
-function finishPayPalCheckout_(params) {
-  const orderId = clean_(params.token);
-  if (!orderId) throw new Error('Missing PayPal order ID.');
-  const key = 'PAYPAL_ORDER_' + orderId;
+function finishStripeCheckout_(params) {
+  const sessionId = clean_(params.session_id);
+  if (!sessionId) throw new Error('Missing Stripe checkout session ID.');
+
+  const key = 'STRIPE_SESSION_' + sessionId;
   const props = PropertiesService.getScriptProperties();
   const pending = JSON.parse(props.getProperty(key) || '{}');
-  if (!pending.email) throw new Error('Unknown or expired payment order.');
-  const capture = paypalRequest_('/v2/checkout/orders/' + encodeURIComponent(orderId) + '/capture', 'post', {});
-  const unit = (capture.purchase_units || [])[0] || {};
-  const payment = (((unit.payments || {}).captures || [])[0]) || {};
-  const amount = payment.amount || unit.amount || {};
-  if (capture.status !== 'COMPLETED' || payment.status !== 'COMPLETED') throw new Error('PayPal payment was not completed.');
-  if (amount.currency_code !== CONFIG.CURRENCY || amount.value !== CONFIG.DISCOVERY_PRICE) throw new Error('Payment amount verification failed.');
+  if (!pending.email) throw new Error('Unknown or expired payment session.');
+
+  const session = stripeRequest_('/v1/checkout/sessions/' + encodeURIComponent(sessionId), 'get');
+  verifyStripeSession_(session, pending.email);
+
   pending.status = 'COMPLETED';
-  pending.captureId = payment.id || '';
+  pending.paymentIntentId = clean_(session.payment_intent);
   pending.paidAt = Date.now();
   props.setProperty(key, JSON.stringify(pending));
-  return redirectPage_(CONFIG.SITE_URL + '?payment=success&order=' + encodeURIComponent(orderId), 'Payment confirmed');
+
+  return redirectPage_(CONFIG.SITE_URL + '?payment=success&order=' + encodeURIComponent(sessionId), 'Payment confirmed');
 }
 
-function paypalRequest_(path, method, payload) {
-  const props = PropertiesService.getScriptProperties();
-  const clientId = props.getProperty('PAYPAL_CLIENT_ID');
-  const secret = props.getProperty('PAYPAL_CLIENT_SECRET');
-  const env = (props.getProperty('PAYPAL_ENVIRONMENT') || 'sandbox').toLowerCase();
-  if (!clientId || !secret) throw new Error('PayPal credentials are not configured.');
-  const base = env === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
-  const tokenRes = UrlFetchApp.fetch(base + '/v1/oauth2/token', {
-    method: 'post',
-    headers: { Authorization: 'Basic ' + Utilities.base64Encode(clientId + ':' + secret) },
-    payload: 'grant_type=client_credentials',
-    contentType: 'application/x-www-form-urlencoded',
-    muteHttpExceptions: true
-  });
-  const tokenBody = JSON.parse(tokenRes.getContentText() || '{}');
-  if (tokenRes.getResponseCode() >= 300 || !tokenBody.access_token) throw new Error('PayPal authentication failed.');
+function stripeRequest_(path, method, payload) {
+  const secret = PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY');
+  if (!secret) throw new Error('Stripe credentials are not configured.');
+
   const options = {
     method: method,
-    headers: { Authorization: 'Bearer ' + tokenBody.access_token, Accept: 'application/json', 'PayPal-Request-Id': Utilities.getUuid() },
-    contentType: 'application/json',
+    headers: {
+      Authorization: 'Bearer ' + secret,
+      Accept: 'application/json'
+    },
     muteHttpExceptions: true
   };
-  if (payload !== undefined) options.payload = JSON.stringify(payload);
-  const response = UrlFetchApp.fetch(base + path, options);
+
+  if (payload !== undefined) {
+    options.payload = payload;
+    options.contentType = 'application/x-www-form-urlencoded';
+  }
+
+  const response = UrlFetchApp.fetch('https://api.stripe.com' + path, options);
   const body = JSON.parse(response.getContentText() || '{}');
-  if (response.getResponseCode() >= 300) throw new Error('PayPal request failed: ' + clean_(body.message || body.name || response.getResponseCode()));
+  if (response.getResponseCode() >= 300) {
+    const message = body && body.error && body.error.message ? body.error.message : response.getResponseCode();
+    throw new Error('Stripe request failed: ' + clean_(message));
+  }
   return body;
 }
 
-function verifyPayment_(orderId, email) {
-  if (!orderId) throw new Error('Payment is required before booking.');
-  const raw = PropertiesService.getScriptProperties().getProperty('PAYPAL_ORDER_' + clean_(orderId));
+function verifyStripeSession_(session, email) {
+  if (!session || !session.id) throw new Error('Payment could not be verified.');
+  if (session.payment_status !== 'paid') throw new Error('Payment has not completed.');
+  if (Number(session.amount_total) !== CONFIG.DISCOVERY_PRICE_PENCE) throw new Error('Payment amount verification failed.');
+  if (String(session.currency || '').toUpperCase() !== CONFIG.CURRENCY) throw new Error('Payment currency verification failed.');
+  if (String(session.client_reference_id || '').toLowerCase() !== String(email || '').toLowerCase()) throw new Error('Payment does not match this booking email.');
+}
+
+function verifyPayment_(sessionId, email) {
+  if (!sessionId) throw new Error('Payment is required before booking.');
+
+  const key = 'STRIPE_SESSION_' + clean_(sessionId);
+  const props = PropertiesService.getScriptProperties();
+  const raw = props.getProperty(key);
   if (!raw) throw new Error('Payment could not be verified.');
+
   const payment = JSON.parse(raw);
   if (payment.status !== 'COMPLETED') throw new Error('Payment has not completed.');
   if (String(payment.email || '').toLowerCase() !== String(email || '').toLowerCase()) throw new Error('Payment does not match this booking email.');
   if (payment.bookingId) throw new Error('This payment has already been used for a booking.');
+
+  const session = stripeRequest_('/v1/checkout/sessions/' + encodeURIComponent(clean_(sessionId)), 'get');
+  verifyStripeSession_(session, email);
   return payment;
 }
 
-function markPaymentUsed_(orderId, bookingId) {
+function markPaymentUsed_(sessionId, bookingId) {
   const props = PropertiesService.getScriptProperties();
-  const key = 'PAYPAL_ORDER_' + clean_(orderId);
+  const key = 'STRIPE_SESSION_' + clean_(sessionId);
   const payment = JSON.parse(props.getProperty(key) || '{}');
   payment.bookingId = bookingId;
   payment.usedAt = Date.now();
@@ -164,24 +180,56 @@ function bookSlot_(body) {
   const required = ['start', 'end', 'name', 'email', 'paymentOrderId'];
   required.forEach((key) => { if (!body[key]) throw new Error('Missing ' + key); });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) throw new Error('Invalid email');
+
   verifyPayment_(body.paymentOrderId, body.email);
+
   const start = new Date(body.start), end = new Date(body.end);
   if (isNaN(start) || isNaN(end) || end <= start) throw new Error('Invalid booking time');
   if ((end - start) !== CONFIG.SLOT_MINUTES * 60000) throw new Error('Invalid slot length');
   if (start.getTime() <= Date.now()) throw new Error('This slot is no longer available');
+
   const localDay = Number(Utilities.formatDate(start, CONFIG.TIME_ZONE, 'u'));
   const localHour = Number(Utilities.formatDate(start, CONFIG.TIME_ZONE, 'H'));
   const localMinute = Number(Utilities.formatDate(start, CONFIG.TIME_ZONE, 'm'));
   if (!CONFIG.WEEKDAYS.includes(localDay) || localHour < CONFIG.BUSINESS_HOURS.start || localHour >= CONFIG.BUSINESS_HOURS.end || localMinute % CONFIG.SLOT_MINUTES !== 0) throw new Error('Invalid booking window');
+
   const calendar = CalendarApp.getCalendarById(CONFIG.CALENDAR_ID) || CalendarApp.getDefaultCalendar();
   if (calendar.getEvents(start, end).length) throw new Error('This slot has just been booked. Please choose another time.');
+
   const bookingId = 'V2-' + Utilities.getUuid().slice(0, 8).toUpperCase();
-  const description = ['Volume Two Discovery Call','Booking ID: ' + bookingId,'PayPal order: ' + clean_(body.paymentOrderId),'Name: ' + clean_(body.name),'Business: ' + clean_(body.business),'Email: ' + clean_(body.email),'Phone: ' + clean_(body.phone),'Website: ' + clean_(body.website),'Challenge: ' + clean_(body.challenge),'Help wanted: ' + clean_(body.help),'Customer/service value: ' + clean_(body.value),'Urgency: ' + clean_(body.urgency)].join('\n');
-  const event = calendar.createEvent('Volume Two Discovery Call — ' + clean_(body.business || body.name), start, end, { description: description, guests: body.email, sendInvites: true });
+  const description = [
+    'Volume Two Discovery Call',
+    'Booking ID: ' + bookingId,
+    'Stripe session: ' + clean_(body.paymentOrderId),
+    'Name: ' + clean_(body.name),
+    'Business: ' + clean_(body.business),
+    'Email: ' + clean_(body.email),
+    'Phone: ' + clean_(body.phone),
+    'Website: ' + clean_(body.website),
+    'Challenge: ' + clean_(body.challenge),
+    'Help wanted: ' + clean_(body.help),
+    'Customer/service value: ' + clean_(body.value),
+    'Urgency: ' + clean_(body.urgency)
+  ].join('\n');
+
+  const event = calendar.createEvent('Volume Two Discovery Call — ' + clean_(body.business || body.name), start, end, {
+    description: description,
+    guests: body.email,
+    sendInvites: true
+  });
+
   markPaymentUsed_(body.paymentOrderId, bookingId);
+
   const when = Utilities.formatDate(start, CONFIG.TIME_ZONE, 'EEEE d MMMM yyyy, HH:mm');
-  MailApp.sendEmail(body.email, 'Your Volume Two discovery call is booked — ' + bookingId, 'Hi ' + clean_(body.name) + ',\n\nYour Volume Two discovery call is booked for ' + when + ' (UK time).\n\nBooking ID: ' + bookingId + '\nPayment: £95.00 paid via PayPal\n\nA calendar invitation has also been sent to you.\n\nVolume Two');
-  if (CONFIG.INTERNAL_EMAIL) MailApp.sendEmail(CONFIG.INTERNAL_EMAIL, 'New paid discovery call — ' + bookingId, description + '\n\nTime: ' + when + '\nPayment: £95.00 GBP verified');
+  MailApp.sendEmail(
+    body.email,
+    'Your Volume Two discovery call is booked — ' + bookingId,
+    'Hi ' + clean_(body.name) + ',\n\nYour Volume Two discovery call is booked for ' + when + ' (UK time).\n\nBooking ID: ' + bookingId + '\nPayment: £95.00 paid securely by card via Stripe\n\nA calendar invitation has also been sent to you.\n\nVolume Two'
+  );
+  if (CONFIG.INTERNAL_EMAIL) {
+    MailApp.sendEmail(CONFIG.INTERNAL_EMAIL, 'New paid discovery call — ' + bookingId, description + '\n\nTime: ' + when + '\nPayment: £95.00 GBP verified via Stripe');
+  }
+
   return { id: bookingId, eventId: event.getId(), start: start.toISOString(), end: end.toISOString(), label: when };
 }
 
@@ -189,5 +237,11 @@ function redirectPage_(url, title) {
   const safeUrl = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return HtmlService.createHtmlOutput('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + clean_(title) + '</title></head><body><p>' + clean_(title) + '…</p><script>location.replace("' + safeUrl.replace(/&amp;/g, '&') + '")<\/script><p><a href="' + safeUrl + '">Continue</a></p></body></html>');
 }
-function clean_(value) { return String(value || '').replace(/[<>]/g, '').trim().slice(0, 500); }
-function jsonResponse_(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }
+
+function clean_(value) {
+  return String(value || '').replace(/[<>]/g, '').trim().slice(0, 500);
+}
+
+function jsonResponse_(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}

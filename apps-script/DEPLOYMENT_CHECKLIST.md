@@ -3,13 +3,19 @@
 - [ ] Create Apps Script project under the intended Volume Two Google Workspace account.
 - [ ] Paste `Code.gs` and, if using the manifest editor, `appsscript.json`.
 - [ ] Confirm `CONFIG.CALENDAR_ID` points at the intended booking calendar. `primary` is the current default.
+- [ ] In Apps Script **Project Settings → Script properties**, add `STRIPE_SECRET_KEY` using the Stripe **test-mode secret key** first.
 - [ ] Deploy as Web app: Execute as Me; access Anyone.
-- [ ] Authorize Calendar and Mail scopes.
+- [ ] Authorize Calendar, Mail and external-request scopes.
 - [ ] Test `?action=availability` and confirm only genuinely free slots are returned.
-- [ ] Replace `PASTE_APPS_SCRIPT_WEB_APP_URL_HERE` in `script.js` with the `/exec` URL.
+- [ ] Confirm `script.js` points to the deployed `/exec` Apps Script URL.
+- [ ] Complete one Stripe test checkout for £95 using a Stripe test card.
+- [ ] Confirm the successful checkout returns to Volume Two and unlocks appointment times.
 - [ ] Make one test booking using a test attendee email.
 - [ ] Confirm event appears on the intended calendar and blocks the slot.
-- [ ] Confirm attendee invitation and confirmation email arrive.
-- [ ] Confirm a second request for the same slot is rejected.
+- [ ] Confirm attendee invitation and confirmation email arrive and reference Stripe payment.
+- [ ] Confirm the same Stripe Checkout Session cannot be reused for a second booking.
+- [ ] Confirm a second request for the same calendar slot is rejected.
 - [ ] Remove the test event.
-- [ ] Merge only after these live integration checks pass.
+- [ ] Only after sandbox testing passes, replace `STRIPE_SECRET_KEY` with the live key from the intended Volume Two Stripe account.
+- [ ] Run one controlled live checkout before opening production traffic.
+- [ ] Merge only after these integration checks pass.
