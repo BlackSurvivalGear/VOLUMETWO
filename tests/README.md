@@ -1,0 +1,1 @@
+Discovery assistant UI regression checks live in `discovery-ui.test.js`.
