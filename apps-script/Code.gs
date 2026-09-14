@@ -23,10 +23,30 @@ function doPost(e) {
   try {
     lock.waitLock(10000);
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (body.action === 'discoveryRequest') return jsonResponse_({ok:true, enquiry:sendDiscoveryRequest_(body)});
     if (body.action !== 'book') throw new Error('Unsupported action');
     return jsonResponse_({ok:true, booking:bookSlot_(body)});
   } catch (err) { return jsonResponse_({ok:false, error:err.message}); }
   finally { try { lock.releaseLock(); } catch (_) {} }
+}
+
+function sendDiscoveryRequest_(body) {
+  const name=clean_(body.name), email=clean_(body.email).toLowerCase();
+  const challenges=cleanList_(body.challenge), outcomes=cleanList_(body.outcome), timing=clean_(body.timing);
+  if (!name) throw new Error('Your name is required.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('A valid email is required.');
+  if (!challenges.length || !outcomes.length || !timing) throw new Error('Please complete the discovery questions.');
+  if (body.website) throw new Error('Request could not be accepted.');
+  const cache=CacheService.getScriptCache(), throttleKey='DISCOVERY_'+Utilities.base64EncodeWebSafe(email).slice(0,80);
+  if (cache.get(throttleKey)) throw new Error('This request was already sent recently. Please check your email.');
+  const enquiryId='V2-'+Utilities.getUuid().slice(0,8).toUpperCase();
+  const submitted=Utilities.formatDate(new Date(),CONFIG.TIME_ZONE,'EEEE d MMMM yyyy, HH:mm');
+  const details=['New free discovery-call request','Reference: '+enquiryId,'Submitted: '+submitted+' (UK time)','','Name: '+name,'Email: '+email,'Help needed: '+challenges.join(', '),'Desired outcomes: '+outcomes.join(', '),'Timing: '+timing,'','Reply to this enquiry with suitable appointment options.'].join('\n');
+  const confirmation=['Hi '+name,'','Thank you for contacting VolumeTwo. We have received your discovery-call request.','','Reference: '+enquiryId,'Help needed: '+challenges.join(', '),'Desired outcomes: '+outcomes.join(', '),'Timing: '+timing,'','You will receive appointment options by email. No payment is required.','','VolumeTwo',CONFIG.INTERNAL_EMAIL].join('\n');
+  MailApp.sendEmail(CONFIG.INTERNAL_EMAIL,'New free discovery request — '+enquiryId,details,{replyTo:email,name:'VolumeTwo Website'});
+  MailApp.sendEmail(email,'We received your VolumeTwo discovery request — '+enquiryId,confirmation,{replyTo:CONFIG.INTERNAL_EMAIL,name:'VolumeTwo'});
+  cache.put(throttleKey,enquiryId,600);
+  return {id:enquiryId,email:email};
 }
 
 function startStripeCheckout_(params) {
@@ -147,5 +167,6 @@ function redirectPage_(url,title) {
 }
 
 function escapeHtml_(value) { return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cleanList_(value) { const items=Array.isArray(value)?value:[value]; return items.map(clean_).filter(Boolean).slice(0,10); }
 function clean_(value) { return String(value||'').replace(/[<>]/g,'').trim().slice(0,500); }
 function jsonResponse_(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }

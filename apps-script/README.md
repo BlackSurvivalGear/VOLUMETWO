@@ -1,6 +1,10 @@
 # Volume Two Discovery Booking Web App
 
-This Apps Script web app provides Calendar availability, paid PayPal checkout and discovery-call booking.
+This Apps Script web app provides Calendar availability, discovery-call booking and free discovery-enquiry email delivery.
+
+## Free discovery enquiries
+
+POST JSON with `action: "discoveryRequest"`, `name`, `email`, `challenge[]`, `outcome[]` and `timing`. The endpoint emails the full enquiry to `info@volumetwo.co.uk` and a confirmation to the visitor. Duplicate submissions from the same email address are blocked for 10 minutes.
 
 ## Script properties
 
