@@ -1,6 +1,6 @@
 {
   "private": true,
   "scripts": {
-    "test": "node Code.test.js"
+    "test": "node Code.test.js && cd .. && node tests/discovery-ui.test.js && node tests/apps-script-discovery-email.test.js"
   }
 }
