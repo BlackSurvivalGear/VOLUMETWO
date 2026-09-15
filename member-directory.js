@@ -1,0 +1,12 @@
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { app } from "./firebase-config.js";
+
+const auth=getAuth(app),db=getFirestore(app),list=document.querySelector('#directory-list'),count=document.querySelector('#directory-count'),search=document.querySelector('#directory-search');
+let businesses=[];
+const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const safeUrl=(v='')=>{try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.href:''}catch{return''}};
+const locationOf=b=>[b.city,b.country].filter(Boolean).join(', ');
+function render(){const term=(search?.value||'').trim().toLowerCase();const shown=businesses.filter(b=>[b.name,b.memberName,b.type,locationOf(b),b.services].join(' ').toLowerCase().includes(term));count.textContent=`${shown.length} ${shown.length===1?'business':'businesses'}`;if(!shown.length){list.innerHTML='<div class="directory-empty">No member businesses match your search.</div>';return}list.innerHTML=shown.map(b=>{const url=safeUrl(b.website);return `<article class="directory-card"><div class="directory-logo">${b.logoDataUrl?`<img src="${b.logoDataUrl}" alt="">`:'<span>V2</span>'}</div><div class="directory-card-body"><span class="directory-type">${esc(b.type||'V2 Member Business')}</span><h2>${esc(b.name||'Business')}</h2><p class="directory-member">Member: <strong>${esc(b.memberName||'V2 Member')}</strong></p>${locationOf(b)?`<p class="directory-location">${esc(locationOf(b))}</p>`:''}${b.services?`<p class="directory-services"><span>Services</span>${esc(b.services)}</p>`:''}${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer nofollow">Visit website ↗</a>`:''}</div></article>`}).join('')}
+search?.addEventListener('input',render);
+onAuthStateChanged(auth,user=>{if(!user){window.location.replace('auth.html');return}const q=query(collection(db,'businesses'),where('directoryListed','==',true));onSnapshot(q,s=>{businesses=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));render()},e=>{console.error('Directory load failed:',e);count.textContent='Unavailable';list.innerHTML='<div class="directory-empty">Unable to load the directory. Please try again.</div>'})});
