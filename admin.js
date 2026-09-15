@@ -10,12 +10,7 @@ let currentRole = 'member';
 let currentUid = '';
 let users = [];
 
-const status = (message, type = '') => {
-  const el = document.querySelector('#admin-status');
-  if (!el) return;
-  el.textContent = message;
-  el.dataset.type = type;
-};
+const status = (message, type = '') => { const el = document.querySelector('#admin-status'); if (!el) return; el.textContent = message; el.dataset.type = type; };
 const escapeHtml = (value = '') => String(value).replace(/[&<>'\"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '\"':'&quot;' }[char]));
 const formatDate = (value) => value?.toDate ? value.toDate().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : value ? new Date(value).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
 
@@ -27,10 +22,20 @@ function updateStats(list) {
   document.querySelector('#stat-suspended').textContent = list.filter((u) => u.suspended).length;
 }
 
-function actionCell(user) {
+function canManageUser(user) {
   const protectedUser = user.email?.toLowerCase() === 'admin@lawal.org' || user.uid === currentUid;
-  const canManage = currentRole === 'superadmin' ? !protectedUser : currentRole === 'admin' && !protectedUser && ['member','pro'].includes(user.role);
-  if (!canManage) return '<span class="user-email">Protected</span>';
+  return currentRole === 'superadmin' ? !protectedUser : currentRole === 'admin' && !protectedUser && ['member','pro'].includes(user.role);
+}
+
+function roomAccessCell(user) {
+  const isSuperadmin = user.email?.toLowerCase() === 'admin@lawal.org';
+  const checked = isSuperadmin || user.v2RoomAccess === true;
+  const canManage = canManageUser(user);
+  return `<label class="room-access-control" title="${checked ? 'V2 Room access granted' : 'No V2 Room access'}"><input type="checkbox" data-room-access-uid="${escapeHtml(user.uid)}" ${checked ? 'checked' : ''} ${canManage ? '' : 'disabled'} aria-label="V2 Room access for ${escapeHtml(user.email || user.displayName || 'member')}"><span>${checked ? 'Invited' : 'No access'}</span></label>`;
+}
+
+function actionCell(user) {
+  if (!canManageUser(user)) return '<span class="user-email">Protected</span>';
   const roleOptions = currentRole === 'superadmin' ? ['member','pro','admin'] : ['member','pro'];
   const roleSelect = `<select class="role-select" data-role-uid="${escapeHtml(user.uid)}" aria-label="Change role for ${escapeHtml(user.email)}">${roleOptions.map((role) => `<option value="${role}" ${user.role === role ? 'selected' : ''}>${ROLE_LABELS[role]}</option>`).join('')}</select>`;
   const suspendLabel = user.suspended ? 'Resume' : 'Suspend';
@@ -40,8 +45,8 @@ function actionCell(user) {
 function renderUsers(list) {
   updateStats(list);
   const body = document.querySelector('#user-table-body');
-  if (!list.length) { body.innerHTML = '<tr><td colspan="7" class="admin-empty">No V2 user profiles found.</td></tr>'; return; }
-  body.innerHTML = list.map((user) => `<tr><td><span class="user-name">${escapeHtml(user.displayName || 'V2 Member')}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span>${user.phone ? `<span class="user-email">${escapeHtml(user.phone)}</span>` : ''}</td><td><span class="role-pill ${user.role}">${ROLE_LABELS[user.role] || 'Member'}</span></td><td><span class="role-pill plan-${user.plan || 'free'}">${PLAN_LABELS[user.plan] || 'Free'}</span></td><td><span class="status-pill ${user.suspended ? 'suspended' : 'active'}">${user.suspended ? 'Suspended' : 'Active'}</span></td><td>${formatDate(user.createdAt)}</td><td>${formatDate(user.lastSignInAt)}</td><td>${actionCell(user)}</td></tr>`).join('');
+  if (!list.length) { body.innerHTML = '<tr><td colspan="8" class="admin-empty">No V2 user profiles found.</td></tr>'; return; }
+  body.innerHTML = list.map((user) => `<tr><td><span class="user-name">${escapeHtml(user.displayName || 'V2 Member')}</span><span class="user-email">${escapeHtml(user.email || 'No email')}</span>${user.phone ? `<span class="user-email">${escapeHtml(user.phone)}</span>` : ''}</td><td><span class="role-pill ${user.role}">${ROLE_LABELS[user.role] || 'Member'}</span></td><td><span class="role-pill plan-${user.plan || 'free'}">${PLAN_LABELS[user.plan] || 'Free'}</span></td><td><span class="status-pill ${user.suspended ? 'suspended' : 'active'}">${user.suspended ? 'Suspended' : 'Active'}</span></td><td>${formatDate(user.createdAt)}</td><td>${formatDate(user.lastSignInAt)}</td><td>${roomAccessCell(user)}</td><td>${actionCell(user)}</td></tr>`).join('');
 }
 
 async function loadUsers() {
@@ -52,42 +57,32 @@ async function loadUsers() {
     users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
     renderUsers(users);
     status(`${users.length} account${users.length === 1 ? '' : 's'} loaded.`);
-  } catch (error) {
-    console.error(error);
-    status('Unable to load V2 user profiles. Check Firestore rules.', 'error');
-    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="7" class="admin-empty">User profiles could not be loaded.</td></tr>';
-  }
+  } catch (error) { console.error(error); status('Unable to load V2 user profiles. Check Firestore rules.', 'error'); document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="8" class="admin-empty">User profiles could not be loaded.</td></tr>'; }
 }
 
-async function updateUser(uid, data, successMessage) {
-  await updateDoc(doc(db, 'users', uid), data);
-  status(successMessage);
-  await loadUsers();
-}
+async function updateUser(uid, data, successMessage) { await updateDoc(doc(db, 'users', uid), data); status(successMessage); await loadUsers(); }
 
 document.querySelector('#refresh-users')?.addEventListener('click', loadUsers);
 document.querySelector('#user-table-body')?.addEventListener('click', async (event) => {
-  const button = event.target.closest('[data-action]');
-  if (!button) return;
+  const button = event.target.closest('[data-action]'); if (!button) return;
   const uid = button.dataset.uid;
-  if (button.dataset.action === 'delete') {
-    if (!window.confirm('Remove this V2 user profile? Their Firebase sign-in account will remain and can be restored by signing in again.')) return;
-    button.disabled = true; status('Removing profile…');
-    try { await deleteDoc(doc(db, 'users', uid)); await loadUsers(); } catch (error) { status('Unable to remove profile. Check Firestore rules.', 'error'); button.disabled = false; }
-  }
-  if (button.dataset.action === 'toggle') {
-    const suspended = button.dataset.suspended === 'true';
-    button.disabled = true; status(suspended ? 'Restoring access…' : 'Suspending access…');
-    try { await updateUser(uid, { suspended: !suspended, accountStatus: suspended ? 'active' : 'suspended', updatedAt: new Date() }, suspended ? 'V2 access restored.' : 'V2 access suspended.'); } catch (error) { status('Unable to change access status. Check Firestore rules.', 'error'); button.disabled = false; }
-  }
+  if (button.dataset.action === 'delete') { if (!window.confirm('Remove this V2 user profile? Their Firebase sign-in account will remain and can be restored by signing in again.')) return; button.disabled = true; status('Removing profile…'); try { await deleteDoc(doc(db, 'users', uid)); await loadUsers(); } catch (error) { status('Unable to remove profile. Check Firestore rules.', 'error'); button.disabled = false; } }
+  if (button.dataset.action === 'toggle') { const suspended = button.dataset.suspended === 'true'; button.disabled = true; status(suspended ? 'Restoring access…' : 'Suspending access…'); try { await updateUser(uid, { suspended: !suspended, accountStatus: suspended ? 'active' : 'suspended', updatedAt: new Date() }, suspended ? 'V2 access restored.' : 'V2 access suspended.'); } catch (error) { status('Unable to change access status. Check Firestore rules.', 'error'); button.disabled = false; } }
 });
 
 document.querySelector('#user-table-body')?.addEventListener('change', async (event) => {
-  const select = event.target.closest('[data-role-uid]');
-  if (!select) return;
-  const uid = select.dataset.roleUid;
-  const role = select.value;
-  select.disabled = true; status('Updating access level…');
+  const roomCheckbox = event.target.closest('[data-room-access-uid]');
+  if (roomCheckbox) {
+    const uid = roomCheckbox.dataset.roomAccessUid;
+    const granted = roomCheckbox.checked;
+    roomCheckbox.disabled = true;
+    status(granted ? 'Granting V2 Room access…' : 'Revoking V2 Room access…');
+    try { await updateUser(uid, { v2RoomAccess: granted, updatedAt: new Date() }, granted ? 'V2 Room invitation granted.' : 'V2 Room access revoked.'); }
+    catch (error) { console.error(error); roomCheckbox.checked = !granted; roomCheckbox.disabled = false; status('Unable to change V2 Room access. Check Firestore rules.', 'error'); }
+    return;
+  }
+  const select = event.target.closest('[data-role-uid]'); if (!select) return;
+  const uid = select.dataset.roleUid, role = select.value; select.disabled = true; status('Updating access level…');
   try { await updateUser(uid, { role, updatedAt: new Date() }, `Access level changed to ${ROLE_LABELS[role]}.`); } catch (error) { status('Unable to update role. Check Firestore rules.', 'error'); select.disabled = false; }
 });
 
@@ -102,9 +97,5 @@ onAuthStateChanged(auth, async (user) => {
     document.querySelector('[data-auth-role]').textContent = ROLE_LABELS[currentRole];
     renderUsers(snapshot.docs.map((item) => ({ uid: item.id, ...item.data(), role: ROLE_LABELS[item.data().role] ? item.data().role : 'member', plan: PLAN_LABELS[item.data().plan] ? item.data().plan : 'free' })));
     status('User profiles loaded.');
-  } catch (error) {
-    console.error(error);
-    status('Administrator access could not be verified. Check Firestore rules.', 'error');
-    document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="7" class="admin-empty">Administrator access could not be verified.</td></tr>';
-  }
+  } catch (error) { console.error(error); status('Administrator access could not be verified. Check Firestore rules.', 'error'); document.querySelector('#user-table-body').innerHTML = '<tr><td colspan="8" class="admin-empty">Administrator access could not be verified.</td></tr>'; }
 });
