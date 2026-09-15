@@ -11,10 +11,22 @@
 <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation"></nav>
 <main>
 <section class="room-hero"><div><p class="eyebrow">Volume Two / Members only</p><h1>The V2<br><em>Room.</em></h1><p>A private business community for signed-in Volume Two members to ask questions, share experience, make connections and help each other move business forward.</p></div><div class="room-badge"><span data-auth-role>Member</span><small>PRIVATE ACCESS</small><strong>V2 ROOM</strong><small>BUSINESS COMMUNITY</small></div></section>
-<section class="room-welcome section-pad"><div><span class="account-label">Welcome</span><strong id="member-name">Loading…</strong><span id="member-email">Checking your account…</span></div><p>Start with the areas below. Community posting, replies and member networking can be added in the next implementation stage without changing the existing dashboard or business tools.</p></section>
-<section class="room-facilities section-pad"><div class="section-label">01 / Community facilities</div><div class="room-heading"><h2>Business happens<br><em>between members.</em></h2><p>The V2 Room is designed as a useful working community rather than a general social feed.</p></div><div class="facility-grid">
-<article class="facility-card"><span>01</span><h3>Business Noticeboard</h3><p>Post business questions, challenges, announcements, requests for recommendations and useful community information.</p><strong>Core facility</strong></article>
-<article class="facility-card"><span>02</span><h3>Ask the Room</h3><p>Members ask practical business questions and receive experience-based answers from the V2 community.</p><strong>Core facility</strong></article>
+<section class="room-welcome section-pad"><div><span class="account-label">Welcome</span><strong id="member-name">Loading…</strong><span id="member-email">Checking your account…</span></div><p>Post a notice for the community or ask the room a practical business question. Posts are visible only to signed-in V2 members.</p></section>
+<section class="room-conversation section-pad">
+<div class="section-label">01 / Community conversation</div>
+<div class="room-heading"><h2>Post to<br><em>the room.</em></h2><p>Use the noticeboard for announcements, recommendations and requests. Use Ask the Room when you want experience or advice from other members.</p></div>
+<div class="room-workspace">
+<form id="room-post-form" class="room-post-form">
+<label>Post type<select name="type" required><option value="notice">Business Noticeboard</option><option value="question">Ask the Room</option></select></label>
+<label>Title<input name="title" maxlength="120" required placeholder="What do members need to know?"></label>
+<label>Details<textarea name="body" maxlength="2000" rows="7" required placeholder="Add enough context for the V2 community to respond usefully."></textarea></label>
+<button class="btn btn-primary" type="submit">Post to The V2 Room</button><p id="room-post-status" class="room-post-status" aria-live="polite"></p>
+</form>
+<div class="room-feed-wrap"><div class="room-feed-controls"><button class="active" type="button" data-room-filter="all">All</button><button type="button" data-room-filter="notice">Noticeboard</button><button type="button" data-room-filter="question">Ask the Room</button></div><div id="room-feed" class="room-feed"><div class="room-empty">Loading the room…</div></div></div>
+</div></section>
+<section class="room-facilities section-pad"><div class="section-label">02 / Community facilities</div><div class="room-heading"><h2>More ways to<br><em>work together.</em></h2><p>The first two facilities are now the live conversation area. The remaining facilities provide the roadmap for the V2 member community.</p></div><div class="facility-grid">
+<article class="facility-card"><span>01</span><h3>Business Noticeboard</h3><p>Post business challenges, announcements, recommendations and useful community information.</p><strong>Live</strong></article>
+<article class="facility-card"><span>02</span><h3>Ask the Room</h3><p>Ask practical business questions and draw on the experience of the V2 community.</p><strong>Live</strong></article>
 <article class="facility-card"><span>03</span><h3>Opportunities Board</h3><p>Share collaborations, contracts, supplier needs, tenders, referrals and other legitimate business opportunities.</p><strong>Recommended</strong></article>
 <article class="facility-card"><span>04</span><h3>Member Directory</h3><p>Opt-in business profiles so members can discover skills, services and potential collaborators inside the community.</p><strong>Recommended</strong></article>
 <article class="facility-card"><span>05</span><h3>Resource Exchange</h3><p>Share useful templates, guides, links, checklists and business resources with other members.</p><strong>Recommended</strong></article>
@@ -22,7 +34,7 @@
 <article class="facility-card"><span>07</span><h3>Events & Sessions</h3><p>Private notices for V2 workshops, member sessions, networking events, clinics and Business Bootcamp opportunities.</p><strong>Future facility</strong></article>
 <article class="facility-card"><span>08</span><h3>V2 Help Desk</h3><p>Raise questions about Volume Two services, tools or the member experience without mixing support requests into public channels.</p><strong>Future facility</strong></article>
 </div></section>
-<section class="room-principles"><div><p class="eyebrow">Room standard</p><h2>Useful. Professional.<br><em>Member-led.</em></h2><p>No public access. No anonymous posting. Keep discussion relevant to business, constructive and respectful. Member identity should remain attached to posts to support trust and accountability.</p></div></section>
+<section class="room-principles"><div><p class="eyebrow">Room standard</p><h2>Useful. Professional.<br><em>Member-led.</em></h2><p>No public access. No anonymous posting. Keep discussion relevant to business, constructive and respectful. Member identity remains attached to posts to support trust and accountability.</p></div></section>
 </main><footer class="site-footer"><div class="footer-brand">VOLUME TWO</div><div>Strategy · Growth · Community</div><div>© <span id="year"></span> Volume Two</div></footer>
-<script src="script.js"></script><script type="module" src="auth.js?v=6"></script>
+<script src="script.js"></script><script type="module" src="auth.js?v=6"></script><script type="module" src="community.js?v=1"></script>
 </body></html>
